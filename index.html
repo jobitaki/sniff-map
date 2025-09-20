@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNIFF - Air Quality Map</title>
+    
+    <!-- Note: Using a simple canvas-based map implementation due to CDN restrictions -->
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>SNIFF Project - Air Quality Monitor</h1>
+        <p>Real-time air quality data visualization</p>
+    </header>
+    
+    <main>
+        <div class="controls">
+            <div class="control-group">
+                <label for="data-source">Data Source:</label>
+                <select id="data-source">
+                    <option value="sample">Sample Data</option>
+                    <option value="upload">Upload Data</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="pollutant-filter">Show Pollutant:</label>
+                <select id="pollutant-filter">
+                    <option value="all">All</option>
+                    <option value="pm25">PM2.5</option>
+                    <option value="pm10">PM10</option>
+                    <option value="no2">NO2</option>
+                    <option value="o3">O3</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <input type="file" id="file-input" accept=".json,.csv" style="display: none;">
+                <button id="upload-btn" style="display: none;">Upload Data File</button>
+            </div>
+        </div>
+        
+        <div id="map">
+            <canvas id="map-canvas"></canvas>
+            <div id="map-info">
+                <div id="coordinates">Lat: 40.7128, Lng: -74.0060</div>
+                <div id="zoom-controls">
+                    <button id="zoom-in">+</button>
+                    <button id="zoom-out">-</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <h3>Air Quality Index</h3>
+            <div class="legend-item">
+                <span class="legend-color good"></span>
+                <span>Good (0-50)</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color moderate"></span>
+                <span>Moderate (51-100)</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color unhealthy-sensitive"></span>
+                <span>Unhealthy for Sensitive Groups (101-150)</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color unhealthy"></span>
+                <span>Unhealthy (151-200)</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color very-unhealthy"></span>
+                <span>Very Unhealthy (201-300)</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color hazardous"></span>
+                <span>Hazardous (301+)</span>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; 2024 SNIFF Project. Monitoring air quality for healthier communities.</p>
+    </footer>
+    
+    <!-- Note: Simple map implementation without external dependencies -->
+    
+    <!-- Custom JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+lat,lng,location,aqi,pm25,pm10,no2,o3
+40.7829,-73.9654,"Upper West Side NYC",95,55,68,42,98
+40.6782,-73.9442,"Brooklyn Heights",78,38,45,28,82
+40.7505,-73.9934,"Midtown Manhattan",110,72,89,58,115
+40.7282,-74.0776,"Financial District",65,32,38,25,67
+40.8176,-73.9782,"Washington Heights",88,48,58,35,92
