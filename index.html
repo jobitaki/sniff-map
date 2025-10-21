@@ -3,91 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SNIFF - Air Quality Map</title>
-    
-    <!-- Note: Using a simple canvas-based map implementation due to CDN restrictions -->
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <header>
-        <h1>SNIFF Project - Air Quality Monitor</h1>
-        <p>Real-time air quality data visualization</p>
-    </header>
-    
-    <main>
-        <div class="controls">
-            <div class="control-group">
-                <label for="data-source">Data Source:</label>
-                <select id="data-source">
-                    <option value="sample">Sample Data</option>
-                    <option value="upload">Upload Data</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label for="pollutant-filter">Show Pollutant:</label>
-                <select id="pollutant-filter">
-                    <option value="all">All</option>
-                    <option value="pm25">PM2.5</option>
-                    <option value="pm10">PM10</option>
-                    <option value="no2">NO2</option>
-                    <option value="o3">O3</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <input type="file" id="file-input" accept=".json,.csv" style="display: none;">
-                <button id="upload-btn" style="display: none;">Upload Data File</button>
-            </div>
-        </div>
+    <title>Sniff Pittsburgh</title>
+    <!-- Google Fonts - IBM Plex Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <style>
+        /* Set IBM Plex Sans as the default font for all text */
+        * {
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
         
-        <div id="map">
-            <canvas id="map-canvas"></canvas>
-            <div id="map-info">
-                <div id="coordinates">Lat: 40.7128, Lng: -74.0060</div>
-                <div id="zoom-controls">
-                    <button id="zoom-in">+</button>
-                    <button id="zoom-out">-</button>
+        #map { height: 100vh; width: 100%; }
+        .air-quality-marker {
+            background: none;
+            border: none;
+            font-weight: regular;
+            font-size: 25px;
+            text-align: center;
+            line-height: 50px;
+        }
+        /* Fix zoom controls positioning to avoid navbar overlap */
+        .leaflet-control-zoom {
+            margin-top: 110px !important; /* Push zoom controls below the simplified navbar */
+            z-index: 999 !important; /* Ensure they stay below navbar but above map */
+        }
+        
+        /* Make zoom controls larger */
+        .leaflet-control-zoom a {
+            width: 50px !important;
+            height: 50px !important;
+            font-size: 24px !important;
+            line-height: 50px !important;
+        }
+        
+        .leaflet-control-zoom {
+            border: 2px solid rgba(255,255,255,0.8) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        }
+    </style>
+</head>
+<body class="m-0 p-0">
+    <!-- Header -->
+    <div class="absolute top-0 left-0 right-0 z-[1000] bg-sky-900/85 backdrop-blur-sm text-white shadow-lg border-b border-white/20">
+        <div class="flex items-center justify-between px-10 py-4">
+            <div class="flex items-center gap-3">
+                <div class="w-[70px] h-[70px] rounded-full flex items-center justify-center p-0">
+                    <img src="sniff_logo.png" alt="Sniff Logo" class="w-full h-full object-contain">
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-3xl font-bold">sniff</span>
+                    <span class="text-3xl">pittsburgh</span>
                 </div>
             </div>
-        </div>
-        
-        <div class="legend">
-            <h3>Air Quality Index</h3>
-            <div class="legend-item">
-                <span class="legend-color good"></span>
-                <span>Good (0-50)</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color moderate"></span>
-                <span>Moderate (51-100)</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color unhealthy-sensitive"></span>
-                <span>Unhealthy for Sensitive Groups (101-150)</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color unhealthy"></span>
-                <span>Unhealthy (151-200)</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color very-unhealthy"></span>
-                <span>Very Unhealthy (201-300)</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color hazardous"></span>
-                <span>Hazardous (301+)</span>
+            
+            <div class="flex items-center gap-6">
+                <a href="about.html" class="text-3xl hover:underline">about</a>
+                <a href="contact.html" class="text-3xl hover:underline">contact</a>
             </div>
         </div>
-    </main>
-    
-    <footer>
-        <p>&copy; 2024 SNIFF Project. Monitoring air quality for healthier communities.</p>
-    </footer>
-    
-    <!-- Note: Simple map implementation without external dependencies -->
-    
-    <!-- Custom JavaScript -->
-    <script src="script.js"></script>
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Floating Legends -->
+    <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-4 flex-col lg:flex-row max-w-[95vw] items-center">
+        <!-- Data Freshness Legend -->
+        <div class="bg-sky-900/80 backdrop-blur-sm text-white rounded-full px-6 py-4 shadow-lg border border-white/20 flex-shrink-0 w-fit">
+            <div class="flex items-center gap-4">
+                <span class="text-lg font-medium whitespace-nowrap">stale data</span>
+                <div class="flex gap-2">
+                    <div class="w-5 h-5 rounded-full border-4 border-gray-400"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-red-500"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-yellow-500"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-green-500"></div>
+                </div>
+                <span class="text-lg font-medium whitespace-nowrap">new data</span>
+            </div>
+        </div>
+
+        <!-- Air Quality Legend -->
+            <div class="flex rounded-full overflow-hidden border border-white/20 shadow-lg min-w-0">
+                <div class="bg-green-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-md text-white whitespace-nowrap">Good</span>
+                </div>
+                <div class="bg-lime-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-md text-white whitespace-nowrap">Moderate</span>
+                </div>
+                <div class="bg-yellow-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-md text-white whitespace-nowrap">Unhealthy (sensitive)</span>
+                </div>
+                <div class="bg-orange-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-md text-white whitespace-nowrap">Unhealthy</span>
+                </div>
+                <div class="bg-red-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-md text-white whitespace-nowrap">Very unhealthy</span>
+                </div>
+                <div class="bg-purple-600 px-4 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-md text-white whitespace-nowrap">Hazardous</span>
+                </div>
+            </div>
+    </div>
+
+    <script>
+        // Initialize map centered on Pittsburgh
+        const map = L.map('map').setView([40.4406, -79.9959], 13);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Function to get color based on air quality value
+        function getColor(value) {
+            if (value <= 50) return '#22c55e'; // green
+            if (value <= 75) return '#84cc16'; // lime
+            if (value <= 100) return '#eab308'; // yellow
+            if (value <= 125) return '#f97316'; // orange
+            return '#ef4444'; // red
+        }
+
+        // Sample air quality data points
+        const airQualityData = [
+            { lat: 40.4623, lng: -80.0162, value: 90 },
+            { lat: 40.4556, lng: -80.0089, value: 100 },
+            { lat: 40.4489, lng: -80.0123, value: 128 },
+            { lat: 40.4445, lng: -79.9989, value: 97 },
+            { lat: 40.4389, lng: -79.9945, value: 95 },
+            { lat: 40.4489, lng: -79.9723, value: 64 },
+            { lat: 40.4512, lng: -79.9545, value: 58 },
+            { lat: 40.4567, lng: -79.9389, value: 60 },
+            { lat: 40.4623, lng: -79.9234, value: 70 },
+            { lat: 40.4289, lng: -79.9567, value: 45 },
+            { lat: 40.4189, lng: -79.9445, value: 40 },
+            { lat: 40.4134, lng: -79.9289, value: 30 },
+            { lat: 40.4089, lng: -79.8989, value: 33 },
+            { lat: 40.4023, lng: -79.8867, value: 20 },
+            { lat: 40.3912, lng: -79.8945, value: 25 },
+            { lat: 40.3856, lng: -79.8812, value: 27 },
+            { lat: 40.4267, lng: -80.0234, value: 80 },
+            { lat: 40.4201, lng: -80.0089, value: 88 },
+            { lat: 40.4089, lng: -79.9989, value: 76 },
+            { lat: 40.3923, lng: -79.9812, value: 70 }
+        ];
+
+        // Add markers to map
+        airQualityData.forEach(point => {
+            const color = getColor(point.value);
+            const icon = L.divIcon({
+                className: 'air-quality-marker',
+                html: `<div style="
+                    width: 75px;
+                    height: 75px;
+                    border-radius: 50%;
+                    background-color: ${color};
+                    border: 6px solid rgba(255,255,255,0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                ">${point.value}</div>`,
+                iconSize: [50, 50],
+                iconAnchor: [25, 25]
+            });
+
+            L.marker([point.lat, point.lng], { icon: icon })
+                .bindPopup(`
+                    <div class="text-center">
+                        <div class="font-bold text-lg">${point.value}</div>
+                        <div class="text-sm text-gray-600">Air Quality Index</div>
+                        <div class="text-xs text-gray-500 mt-1">Last Updated: 20 mins ago</div>
+                    </div>
+                `)
+                .addTo(map);
+        });
+    </script>
 </body>
 </html>
