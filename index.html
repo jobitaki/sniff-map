@@ -22,22 +22,22 @@
             background: none;
             border: none;
             font-weight: regular;
-            font-size: 25px;
+            font-size: 20px;
             text-align: center;
             line-height: 50px;
         }
         /* Fix zoom controls positioning to avoid navbar overlap */
         .leaflet-control-zoom {
-            margin-top: 110px !important; /* Push zoom controls below the simplified navbar */
+            margin-top: 90px !important; /* Push zoom controls below the simplified navbar */
             z-index: 999 !important; /* Ensure they stay below navbar but above map */
         }
         
         /* Make zoom controls larger */
         .leaflet-control-zoom a {
-            width: 50px !important;
-            height: 50px !important;
+            width: 40px !important;
+            height: 40px !important;
             font-size: 24px !important;
-            line-height: 50px !important;
+            line-height: 40px !important;
         }
         
         .leaflet-control-zoom {
@@ -50,20 +50,36 @@
 <body class="m-0 p-0">
     <!-- Header -->
     <div class="absolute top-0 left-0 right-0 z-[1000] bg-sky-900/85 backdrop-blur-sm text-white shadow-lg border-b border-white/20">
-        <div class="flex items-center justify-between px-10 py-4">
+        <div class="flex items-center justify-between px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="w-[70px] h-[70px] rounded-full flex items-center justify-center p-0">
+                <div class="w-[40px] h-[40px] rounded-full flex items-center justify-center p-0">
                     <img src="sniff_logo.png" alt="Sniff Logo" class="w-full h-full object-contain">
                 </div>
                 <div class="flex items-baseline gap-2">
-                    <span class="text-3xl font-bold">sniff</span>
-                    <span class="text-3xl">pittsburgh</span>
+                    <span class="text-xl font-bold">sniff</span>
+                    <span class="text-xl">pittsburgh</span>
                 </div>
             </div>
             
-            <div class="flex items-center gap-6">
-                <a href="about.html" class="text-3xl hover:underline">about</a>
-                <a href="contact.html" class="text-3xl hover:underline">contact</a>
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center gap-4">
+                <a href="about.html" class="text-lg hover:underline">about</a>
+                <a href="contact.html" class="text-lg hover:underline">contact</a>
+            </div>
+            
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-sky-900/95 backdrop-blur-sm border-t border-white/20">
+            <div class="px-4 py-3 space-y-2 text-right">
+                <a href="about.html" class="block text-lg hover:text-blue-300">about</a>
+                <a href="contact.html" class="block text-lg hover:text-blue-300">contact</a>
             </div>
         </div>
     </div>
@@ -74,38 +90,61 @@
     <!-- Floating Legends -->
     <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-4 flex-col lg:flex-row max-w-[95vw] items-center">
         <!-- Data Freshness Legend -->
-        <div class="bg-sky-900/80 backdrop-blur-sm text-white rounded-full px-6 py-4 shadow-lg border border-white/20 flex-shrink-0 w-fit">
+        <div class="bg-sky-900/80 backdrop-blur-sm text-white rounded-full px-4 py-2 shadow-lg border border-white/20 flex-shrink-0 w-fit">
             <div class="flex items-center gap-4">
-                <span class="text-lg font-medium whitespace-nowrap">stale data</span>
+                <span class="text-xs font-medium whitespace-nowrap">stale data</span>
                 <div class="flex gap-2">
                     <div class="w-5 h-5 rounded-full border-4 border-gray-400"></div>
                     <div class="w-5 h-5 rounded-full border-4 border-red-500"></div>
                     <div class="w-5 h-5 rounded-full border-4 border-yellow-500"></div>
                     <div class="w-5 h-5 rounded-full border-4 border-green-500"></div>
                 </div>
-                <span class="text-lg font-medium whitespace-nowrap">new data</span>
+                <span class="text-xs font-medium whitespace-nowrap">new data</span>
             </div>
         </div>
 
         <!-- Air Quality Legend -->
-            <div class="flex rounded-full overflow-hidden border border-white/20 shadow-lg min-w-0">
-                <div class="bg-green-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
-                    <span class="text-md text-white whitespace-nowrap">Good</span>
+            <!-- Desktop: Single Row -->
+            <div class="hidden sm:flex rounded-full overflow-hidden">
+                <div class="bg-green-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Good</span>
                 </div>
-                <div class="bg-lime-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
-                    <span class="text-md text-white whitespace-nowrap">Moderate</span>
+                <div class="bg-lime-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Moderate</span>
                 </div>
-                <div class="bg-yellow-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
-                    <span class="text-md text-white whitespace-nowrap">Unhealthy (sensitive)</span>
+                <div class="bg-yellow-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Unhealthy (sensitive)</span>
                 </div>
-                <div class="bg-orange-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
-                    <span class="text-md text-white whitespace-nowrap">Unhealthy</span>
+                <div class="bg-orange-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Unhealthy</span>
                 </div>
-                <div class="bg-red-500 px-4 py-2 flex items-center justify-center flex-shrink-0">
-                    <span class="text-md text-white whitespace-nowrap">Very unhealthy</span>
+                <div class="bg-red-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Very unhealthy</span>
                 </div>
-                <div class="bg-purple-600 px-4 py-2 flex items-center justify-center flex-shrink-0">
-                    <span class="text-md text-white whitespace-nowrap">Hazardous</span>
+                <div class="bg-purple-600 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Hazardous</span>
+                </div>
+            </div>
+            
+            <!-- Mobile: Two Rows -->
+            <div class="sm:hidden grid grid-cols-3 gap-0 rounded-full overflow-hidden">
+                <div class="bg-green-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">Good</span>
+                </div>
+                <div class="bg-lime-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">Moderate</span>
+                </div>
+                <div class="bg-yellow-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">USG</span>
+                </div>
+                <div class="bg-orange-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">Unhealthy</span>
+                </div>
+                <div class="bg-red-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white whitespace-nowrap">Very unhealthy</span>
+                </div>
+                <div class="bg-purple-600 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">Hazardous</span>
                 </div>
             </div>
     </div>
@@ -158,11 +197,11 @@
             const icon = L.divIcon({
                 className: 'air-quality-marker',
                 html: `<div style="
-                    width: 75px;
-                    height: 75px;
+                    width: 60px;
+                    height: 60px;
                     border-radius: 50%;
                     background-color: ${color};
-                    border: 6px solid rgba(255,255,255,0.8);
+                    border: 4px solid rgba(255,255,255,0.8);
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -181,6 +220,22 @@
                     </div>
                 `)
                 .addTo(map);
+        });
+
+        // Mobile menu functionality
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (!mobileMenuBtn.contains(event.target) && !mobileMenu.contains(event.target)) {
+                mobileMenu.classList.add('hidden');
+            }
         });
     </script>
 </body>
