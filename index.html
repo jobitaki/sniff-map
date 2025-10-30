@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sniff Pittsburgh</title>
+    <!-- Google Fonts - IBM Plex Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <style>
+        /* Set IBM Plex Sans as the default font for all text */
+        * {
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+        
+        #map { height: 100vh; width: 100%; }
+        .air-quality-marker {
+            background: none;
+            border: none;
+            font-weight: regular;
+            font-size: 20px;
+            text-align: center;
+            line-height: 50px;
+        }
+        /* Fix zoom controls positioning to avoid navbar overlap */
+        .leaflet-control-zoom {
+            margin-top: 70px !important; /* Push zoom controls below the simplified navbar */
+            z-index: 999 !important; /* Ensure they stay below navbar but above map */
+        }
+        
+        /* Make zoom controls larger */
+        .leaflet-control-zoom a {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 24px !important;
+            line-height: 40px !important;
+        }
+        
+        .leaflet-control-zoom {
+            border: 2px solid rgba(255,255,255,0.8) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        }
+    </style>
+</head>
+<body class="m-0 p-0">
+    <!-- Header -->
+    <div class="absolute top-0 left-0 right-0 z-[1000] bg-sky-900/85 backdrop-blur-sm text-white shadow-lg border-b border-white/20">
+        <div class="flex items-center justify-between px-6 py-2">
+            <div class="flex items-center gap-3">
+                <div class="w-[40px] h-[40px] rounded-full flex items-center justify-center p-0">
+                    <img src="sniff_logo.png" alt="Sniff Logo" class="w-full h-full object-contain">
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-xl font-bold">sniff</span>
+                    <span class="text-xl">pittsburgh</span>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center gap-4">
+                <a href="about.html" class="text-lg hover:underline">about</a>
+                <a href="contact.html" class="text-lg hover:underline">contact</a>
+            </div>
+            
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white/20 backdrop-blur-md border-t border-white/40">
+            <div class="px-4 py-3 space-y-2 text-right">
+                <a href="about.html" class="block text-lg hover:text-blue-300 text-white">about</a>
+                <a href="contact.html" class="block text-lg hover:text-blue-300 text-white">contact</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Floating Legends -->
+    <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-4 flex-col lg:flex-row max-w-[95vw] items-center">
+        <!-- Data Freshness Legend -->
+        <div class="bg-sky-900/80 backdrop-blur-sm text-white rounded-full px-4 py-2 shadow-lg border border-white/20 flex-shrink-0 w-fit">
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-medium whitespace-nowrap">stale data</span>
+                <div class="flex gap-2">
+                    <div class="w-5 h-5 rounded-full border-4 border-gray-300"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-sky-300"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-sky-400"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-sky-500"></div>
+                </div>
+                <span class="text-xs font-medium whitespace-nowrap">new data</span>
+            </div>
+        </div>
+
+        <!-- Air Quality Legend -->
+            <!-- Desktop: Single Row -->
+            <div class="hidden sm:flex rounded-full overflow-hidden">
+                <div class="bg-green-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Good</span>
+                </div>
+                <div class="bg-lime-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Moderate</span>
+                </div>
+                <div class="bg-yellow-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Unhealthy (sensitive)</span>
+                </div>
+                <div class="bg-orange-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Unhealthy</span>
+                </div>
+                <div class="bg-red-500 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Very unhealthy</span>
+                </div>
+                <div class="bg-purple-600 px-3 py-2 flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs text-white whitespace-nowrap">Hazardous</span>
+                </div>
+            </div>
+            
+            <!-- Mobile: Two Rows -->
+            <div class="sm:hidden grid grid-cols-3 gap-0 rounded-full overflow-hidden">
+                <div class="bg-green-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">Good</span>
+                </div>
+                <div class="bg-lime-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">Moderate</span>
+                </div>
+                <div class="bg-yellow-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">USG</span>
+                </div>
+                <div class="bg-orange-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">Unhealthy</span>
+                </div>
+                <div class="bg-red-500 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white whitespace-nowrap">Very unhealthy</span>
+                </div>
+                <div class="bg-purple-600 px-2 py-1 flex items-center justify-center">
+                    <span class="text-xs text-white">Hazardous</span>
+                </div>
+            </div>
+    </div>
+
+    <script>
+        // Initialize map centered on Pittsburgh
+        const map = L.map('map').setView([40.429333, -79.954583], 13);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Function to get color based on air quality value
+        function getColor(value) {
+            if (value <= 50) return '#22c55e'; // green
+            if (value <= 75) return '#84cc16'; // lime
+            if (value <= 100) return '#eab308'; // yellow
+            if (value <= 125) return '#f97316'; // orange
+            return '#ef4444'; // red
+        }
+
+        // Function to get border color based on data age (in hours)
+        function getBorderColor(ageHours) {
+            if (ageHours < 1) return '#3b82f6'; // blue-500 - Fresh (<1h)
+            if (ageHours < 6) return '#60a5fa'; // blue-400 - Recent (1-6h)
+            if (ageHours < 24) return '#93c5fd'; // blue-300 - Older (6-24h)
+            return '#d1d5db'; // gray-300 - Stale (>24h)
+        }
+
+        // Sample air quality data points with data age
+        const airQualityData = [
+            { lat: 40.4623, lng: -80.0162, value: 90, ageHours: 0.5 },
+            { lat: 40.4556, lng: -80.0089, value: 100, ageHours: 2.0 },
+            { lat: 40.4489, lng: -80.0123, value: 128, ageHours: 0.3 },
+            { lat: 40.4445, lng: -79.9989, value: 97, ageHours: 12.0 },
+            { lat: 40.4389, lng: -79.9945, value: 95, ageHours: 1.5 },
+            { lat: 40.4489, lng: -79.9723, value: 64, ageHours: 0.8 },
+            { lat: 40.4512, lng: -79.9545, value: 58, ageHours: 4.0 },
+            { lat: 40.4567, lng: -79.9389, value: 60, ageHours: 0.2 },
+            { lat: 40.4623, lng: -79.9234, value: 70, ageHours: 18.0 },
+            { lat: 40.4289, lng: -79.9567, value: 45, ageHours: 3.0 },
+            { lat: 40.4189, lng: -79.9445, value: 40, ageHours: 0.6 },
+            { lat: 40.4134, lng: -79.9289, value: 30, ageHours: 26.0 },
+            { lat: 40.4089, lng: -79.8989, value: 33, ageHours: 5.0 },
+            { lat: 40.4023, lng: -79.8867, value: 20, ageHours: 1.2 },
+            { lat: 40.3912, lng: -79.8945, value: 25, ageHours: 30.0 },
+            { lat: 40.3856, lng: -79.8812, value: 27, ageHours: 8.0 },
+            { lat: 40.4267, lng: -80.0234, value: 80, ageHours: 0.4 },
+            { lat: 40.4201, lng: -80.0089, value: 88, ageHours: 15.0 },
+            { lat: 40.4089, lng: -79.9989, value: 76, ageHours: 2.5 },
+            { lat: 40.3923, lng: -79.9812, value: 70, ageHours: 48.0 }
+        ];
+
+        // Add markers to map
+        airQualityData.forEach(point => {
+            const color = getColor(point.value);
+            const borderColor = getBorderColor(point.ageHours);
+            const icon = L.divIcon({
+                className: 'air-quality-marker',
+                html: `<div style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background-color: ${color};
+                    border: 4px solid ${borderColor};
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                ">${point.value}</div>`,
+                iconSize: [50, 50],
+                iconAnchor: [25, 25]
+            });
+
+            // Format age display
+            function formatAge(ageHours) {
+                if (ageHours < 1) return `${Math.round(ageHours * 60)} mins ago`;
+                if (ageHours < 24) return `${Math.round(ageHours)} hours ago`;
+                return `${Math.round(ageHours / 24)} days ago`;
+            }
+
+            L.marker([point.lat, point.lng], { icon: icon })
+                .bindPopup(`
+                    <div class="text-center">
+                        <div class="font-bold text-lg">${point.value}</div>
+                        <div class="text-sm text-gray-600">Air Quality Index</div>
+                        <div class="text-xs text-gray-500 mt-1">Last Updated: ${formatAge(point.ageHours)}</div>
+                    </div>
+                `)
+                .addTo(map);
+        });
+
+        // Mobile menu functionality
+        document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (!mobileMenuBtn.contains(event.target) && !mobileMenu.contains(event.target)) {
+                mobileMenu.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
