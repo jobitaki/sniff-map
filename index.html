@@ -28,7 +28,7 @@
         }
         /* Fix zoom controls positioning to avoid navbar overlap */
         .leaflet-control-zoom {
-            margin-top: 90px !important; /* Push zoom controls below the simplified navbar */
+            margin-top: 70px !important; /* Push zoom controls below the simplified navbar */
             z-index: 999 !important; /* Ensure they stay below navbar but above map */
         }
         
@@ -50,7 +50,7 @@
 <body class="m-0 p-0">
     <!-- Header -->
     <div class="absolute top-0 left-0 right-0 z-[1000] bg-sky-900/85 backdrop-blur-sm text-white shadow-lg border-b border-white/20">
-        <div class="flex items-center justify-between px-6 py-4">
+        <div class="flex items-center justify-between px-6 py-2">
             <div class="flex items-center gap-3">
                 <div class="w-[40px] h-[40px] rounded-full flex items-center justify-center p-0">
                     <img src="sniff_logo.png" alt="Sniff Logo" class="w-full h-full object-contain">
@@ -76,10 +76,10 @@
         </div>
         
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-sky-900/95 backdrop-blur-sm border-t border-white/20">
+        <div id="mobile-menu" class="hidden md:hidden bg-white/20 backdrop-blur-md border-t border-white/40">
             <div class="px-4 py-3 space-y-2 text-right">
-                <a href="about.html" class="block text-lg hover:text-blue-300">about</a>
-                <a href="contact.html" class="block text-lg hover:text-blue-300">contact</a>
+                <a href="about.html" class="block text-lg hover:text-blue-300 text-white">about</a>
+                <a href="contact.html" class="block text-lg hover:text-blue-300 text-white">contact</a>
             </div>
         </div>
     </div>
@@ -94,10 +94,10 @@
             <div class="flex items-center gap-4">
                 <span class="text-xs font-medium whitespace-nowrap">stale data</span>
                 <div class="flex gap-2">
-                    <div class="w-5 h-5 rounded-full border-4 border-gray-400"></div>
-                    <div class="w-5 h-5 rounded-full border-4 border-red-500"></div>
-                    <div class="w-5 h-5 rounded-full border-4 border-yellow-500"></div>
-                    <div class="w-5 h-5 rounded-full border-4 border-green-500"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-gray-300"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-sky-300"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-sky-400"></div>
+                    <div class="w-5 h-5 rounded-full border-4 border-sky-500"></div>
                 </div>
                 <span class="text-xs font-medium whitespace-nowrap">new data</span>
             </div>
@@ -151,7 +151,7 @@
 
     <script>
         // Initialize map centered on Pittsburgh
-        const map = L.map('map').setView([40.4406, -79.9959], 13);
+        const map = L.map('map').setView([40.429333, -79.954583], 13);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -167,33 +167,42 @@
             return '#ef4444'; // red
         }
 
-        // Sample air quality data points
+        // Function to get border color based on data age (in hours)
+        function getBorderColor(ageHours) {
+            if (ageHours < 1) return '#3b82f6'; // blue-500 - Fresh (<1h)
+            if (ageHours < 6) return '#60a5fa'; // blue-400 - Recent (1-6h)
+            if (ageHours < 24) return '#93c5fd'; // blue-300 - Older (6-24h)
+            return '#d1d5db'; // gray-300 - Stale (>24h)
+        }
+
+        // Sample air quality data points with data age
         const airQualityData = [
-            { lat: 40.4623, lng: -80.0162, value: 90 },
-            { lat: 40.4556, lng: -80.0089, value: 100 },
-            { lat: 40.4489, lng: -80.0123, value: 128 },
-            { lat: 40.4445, lng: -79.9989, value: 97 },
-            { lat: 40.4389, lng: -79.9945, value: 95 },
-            { lat: 40.4489, lng: -79.9723, value: 64 },
-            { lat: 40.4512, lng: -79.9545, value: 58 },
-            { lat: 40.4567, lng: -79.9389, value: 60 },
-            { lat: 40.4623, lng: -79.9234, value: 70 },
-            { lat: 40.4289, lng: -79.9567, value: 45 },
-            { lat: 40.4189, lng: -79.9445, value: 40 },
-            { lat: 40.4134, lng: -79.9289, value: 30 },
-            { lat: 40.4089, lng: -79.8989, value: 33 },
-            { lat: 40.4023, lng: -79.8867, value: 20 },
-            { lat: 40.3912, lng: -79.8945, value: 25 },
-            { lat: 40.3856, lng: -79.8812, value: 27 },
-            { lat: 40.4267, lng: -80.0234, value: 80 },
-            { lat: 40.4201, lng: -80.0089, value: 88 },
-            { lat: 40.4089, lng: -79.9989, value: 76 },
-            { lat: 40.3923, lng: -79.9812, value: 70 }
+            { lat: 40.4623, lng: -80.0162, value: 90, ageHours: 0.5 },
+            { lat: 40.4556, lng: -80.0089, value: 100, ageHours: 2.0 },
+            { lat: 40.4489, lng: -80.0123, value: 128, ageHours: 0.3 },
+            { lat: 40.4445, lng: -79.9989, value: 97, ageHours: 12.0 },
+            { lat: 40.4389, lng: -79.9945, value: 95, ageHours: 1.5 },
+            { lat: 40.4489, lng: -79.9723, value: 64, ageHours: 0.8 },
+            { lat: 40.4512, lng: -79.9545, value: 58, ageHours: 4.0 },
+            { lat: 40.4567, lng: -79.9389, value: 60, ageHours: 0.2 },
+            { lat: 40.4623, lng: -79.9234, value: 70, ageHours: 18.0 },
+            { lat: 40.4289, lng: -79.9567, value: 45, ageHours: 3.0 },
+            { lat: 40.4189, lng: -79.9445, value: 40, ageHours: 0.6 },
+            { lat: 40.4134, lng: -79.9289, value: 30, ageHours: 26.0 },
+            { lat: 40.4089, lng: -79.8989, value: 33, ageHours: 5.0 },
+            { lat: 40.4023, lng: -79.8867, value: 20, ageHours: 1.2 },
+            { lat: 40.3912, lng: -79.8945, value: 25, ageHours: 30.0 },
+            { lat: 40.3856, lng: -79.8812, value: 27, ageHours: 8.0 },
+            { lat: 40.4267, lng: -80.0234, value: 80, ageHours: 0.4 },
+            { lat: 40.4201, lng: -80.0089, value: 88, ageHours: 15.0 },
+            { lat: 40.4089, lng: -79.9989, value: 76, ageHours: 2.5 },
+            { lat: 40.3923, lng: -79.9812, value: 70, ageHours: 48.0 }
         ];
 
         // Add markers to map
         airQualityData.forEach(point => {
             const color = getColor(point.value);
+            const borderColor = getBorderColor(point.ageHours);
             const icon = L.divIcon({
                 className: 'air-quality-marker',
                 html: `<div style="
@@ -201,7 +210,7 @@
                     height: 60px;
                     border-radius: 50%;
                     background-color: ${color};
-                    border: 4px solid rgba(255,255,255,0.8);
+                    border: 4px solid ${borderColor};
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -211,12 +220,19 @@
                 iconAnchor: [25, 25]
             });
 
+            // Format age display
+            function formatAge(ageHours) {
+                if (ageHours < 1) return `${Math.round(ageHours * 60)} mins ago`;
+                if (ageHours < 24) return `${Math.round(ageHours)} hours ago`;
+                return `${Math.round(ageHours / 24)} days ago`;
+            }
+
             L.marker([point.lat, point.lng], { icon: icon })
                 .bindPopup(`
                     <div class="text-center">
                         <div class="font-bold text-lg">${point.value}</div>
                         <div class="text-sm text-gray-600">Air Quality Index</div>
-                        <div class="text-xs text-gray-500 mt-1">Last Updated: 20 mins ago</div>
+                        <div class="text-xs text-gray-500 mt-1">Last Updated: ${formatAge(point.ageHours)}</div>
                     </div>
                 `)
                 .addTo(map);
