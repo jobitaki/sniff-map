@@ -1,39 +1,35 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   db:
     image: postgres:14
     container_name: sniff_postgres
     environment:
-      POSTGRES_DB: sniff_pittsburgh
-      POSTGRES_USER: sniff_user
-      POSTGRES_PASSWORD: sniff_password
+      POSTGRES_DB: sniff_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sniff_user -d sniff_pittsburgh"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Flask Application
   app:
     build: .
     container_name: sniff_app
     environment:
-      DATABASE_URL: postgresql://sniff_user:sniff_password@db:5432/sniff_pittsburgh
-      FLASK_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres123@db:5432/sniff_db
     ports:
-      - "5000:5000"
+      - "5001:5000"
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - ./app.py:/app/app.py  # For development - remove in production
+      - .:/app
     restart: unless-stopped
 
   # pgAdmin (optional - for database management via web interface)
