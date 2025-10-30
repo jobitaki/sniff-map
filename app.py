@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
+import time
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -12,11 +13,30 @@ app = Flask(__name__)
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     'DATABASE_URL', 
-    'postgresql://username:password@localhost/sniff_pittsburgh'
+    'postgresql://sniff_user:sniff_password@db:5432/sniff_pittsburgh'
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+def wait_for_db(max_retries=30, delay=2):
+    """Wait for database to be available"""
+    for attempt in range(max_retries):
+        try:
+            # Try to create tables - this will fail if DB is not ready
+            with app.app_context():
+                db.create_all()
+            print("✅ Database connection successful!")
+            return True
+        except Exception as e:
+            print(f"⏳ Waiting for database... (attempt {attempt + 1}/{max_retries})")
+            print(f"   Error: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+            else:
+                print("❌ Failed to connect to database after all retries")
+                return False
+    return False
 
 # Simple Air Quality Data Model
 class AirQualityReading(db.Model):
@@ -159,15 +179,18 @@ def get_all_data():
     return jsonify({'data': data, 'count': len(data)})
 
 if __name__ == '__main__':
-    # Create tables if they don't exist
-    with app.app_context():
-        db.create_all()
-        print("🚀 Sniff Pittsburgh - Minimal TTS Data Collector")
-        print("="*50)
-        print("Ready to receive TTS webhooks at: /tts-webhook")
-        print("Health check available at: /health")
-        print("View data at: /data")
-        print("="*50)
+    print("🚀 Sniff Pittsburgh - Minimal TTS Data Collector")
+    print("="*50)
+    
+    # Wait for database to be ready
+    if not wait_for_db():
+        print("❌ Could not connect to database. Exiting.")
+        exit(1)
+    
+    print("Ready to receive TTS webhooks at: /tts-webhook")
+    print("Health check available at: /health")
+    print("View data at: /data")
+    print("="*50)
     
     # Run the app
     app.run(debug=True, host='0.0.0.0', port=5000)
