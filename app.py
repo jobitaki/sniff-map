@@ -149,6 +149,9 @@ class AirQualityReading(db.Model):
         "t": xxx
         "la": xxx,
         "lo": xxx,
+        "lad": xxx,
+        "lod": xxx,
+        "bs": xxx,
         "pm1": xxx,
         "pm25": xxx,
         "pm10": xxx,
@@ -176,6 +179,9 @@ class AirQualityReading(db.Model):
     t = db.Column('t', db.Integer, primary_key=True)  # Timestamp used as ID
     la = db.Column('la', db.Float)  # Latitude
     lo = db.Column('lo', db.Float) # Longitude
+    lad = db.Column('lad', db.String(1))  # Latitude direction (N/S)
+    lod = db.Column('lod', db.String(1))  # Longitude direction (E/W)
+    bs = db.Column('bs', db.Float)  # Bike speed (km/h or mph)
     pm1 = db.Column('pm1', db.Float)      # PM1.0 (µg/m³)
     pm25 = db.Column('pm25', db.Float)   # PM2.5 (µg/m³)
     pm10 = db.Column('pm10', db.Float)    # PM10 (µg/m³)
@@ -267,6 +273,9 @@ def get_latest_data():
             't': reading.t,
             'la': reading.la,
             'lo': reading.lo,
+            'lad': reading.lad,
+            'lod': reading.lod,
+            'bs': reading.bs,
             'pm1': reading.pm1,
             'pm25': reading.pm25,
             'pm10': reading.pm10,
@@ -354,6 +363,9 @@ def handle_tts_webhook():
             t=json_data.get('t'),
             la=-1,
             lo=-1,
+            lad=None,
+            lod=None,
+            bs=-1,
             pm1=-1,
             pm25=-1,
             pm10=-1,

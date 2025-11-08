@@ -138,6 +138,8 @@ http://localhost:5000/tts-webhook
 # Connect to database
 docker-compose exec db psql -U sniff_user -d sniff_pittsburgh
 
+psql -U postgres -d sniff_db -c "DELETE FROM air_quality_readings;"
+
 # View tables
 \dt
 
