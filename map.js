@@ -199,40 +199,149 @@ window.toggleDetails = function(popupId) {
     const toggle = document.getElementById(`${popupId}-toggle`);
     
     if (details && toggle) {
+        const isMobile = window.innerWidth < 768;
+        
         if (details.style.display === 'none') {
             details.style.display = 'block';
             toggle.textContent = 'Hide';
             
-            // Pan the map to ensure the expanded popup is fully visible
-            setTimeout(() => {
-                const popup = document.querySelector('.leaflet-popup');
+            if (isMobile) {
+                // On mobile: create full-screen overlay with popup content
+                const popup = document.querySelector('.air-quality-popup-modern');
                 if (popup) {
-                    const popupRect = popup.getBoundingClientRect();
-                    const mapRect = document.getElementById('map').getBoundingClientRect();
+                    // Save original content for restoration
+                    const originalContent = popup.cloneNode(true);
+                    popup.setAttribute('data-original', 'true');
                     
-                    // Check if popup extends beyond map bounds
-                    let panX = 0;
-                    let panY = 0;
+                    // Create full-screen overlay with margins
+                    const overlay = document.createElement('div');
+                    overlay.id = 'fullscreen-popup-overlay';
+                    overlay.style.cssText = `
+                        position: fixed;
+                        top: 16px;
+                        left: 16px;
+                        right: 16px;
+                        bottom: 16px;
+                        background: white;
+                        border-radius: 20px;
+                        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                        z-index: 10000;
+                        overflow-y: auto;
+                        -webkit-overflow-scrolling: touch;
+                    `;
                     
-                    if (popupRect.bottom > mapRect.bottom) {
-                        panY = popupRect.bottom - mapRect.bottom + 20; // Add 20px padding
-                    }
-                    if (popupRect.top < mapRect.top) {
-                        panY = popupRect.top - mapRect.top - 20;
-                    }
-                    if (popupRect.right > mapRect.right) {
-                        panX = popupRect.right - mapRect.right + 20;
-                    }
-                    if (popupRect.left < mapRect.left) {
-                        panX = popupRect.left - mapRect.left - 20;
+                    // Clone popup content and adjust styling for full screen
+                    const fullscreenContent = popup.cloneNode(true);
+                    fullscreenContent.style.minWidth = '100%';
+                    fullscreenContent.style.maxWidth = '100%';
+                    fullscreenContent.style.borderRadius = '0';
+                    fullscreenContent.style.height = '100vh';
+                    fullscreenContent.style.display = 'flex';
+                    fullscreenContent.style.flexDirection = 'column';
+                    
+                    // Ensure details are visible in fullscreen
+                    const fullscreenDetails = fullscreenContent.querySelector(`#${popupId}-details`);
+                    if (fullscreenDetails) {
+                        fullscreenDetails.style.display = 'block';
                     }
                     
-                    if (panX !== 0 || panY !== 0) {
-                        map.panBy([panX, panY], { animate: true, duration: 0.3 });
-                    }
+                    // Add close button at top
+                    const closeButton = document.createElement('button');
+                    closeButton.innerHTML = '✕';
+                    closeButton.style.cssText = `
+                        position: absolute;
+                        top: 16px;
+                        right: 16px;
+                        background: rgba(0,0,0,0.5);
+                        color: white;
+                        border: none;
+                        border-radius: 50%;
+                        width: 20px;
+                        height: 20px;
+                        font-size: 15px;
+                        cursor: pointer;
+                        z-index: 10001;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    `;
+                    closeButton.onclick = function() {
+                        // Remove blur from background
+                        const mapEl = document.getElementById('map');
+                        const navbar = document.querySelector('.absolute.top-4');
+                        const legends = document.querySelector('.absolute.bottom-6');
+                        
+                        if (mapEl) mapEl.style.filter = '';
+                        if (navbar) navbar.style.filter = '';
+                        if (legends) legends.style.filter = '';
+                        
+                        document.body.removeChild(overlay);
+                        // Reset popup to collapsed state
+                        details.style.display = 'none';
+                        toggle.textContent = 'More';
+                    };
+                    
+                    overlay.appendChild(closeButton);
+                    overlay.appendChild(fullscreenContent);
+                    
+                    // Apply blur to background elements
+                    const mapEl = document.getElementById('map');
+                    const navbar = document.querySelector('.absolute.top-4');
+                    const legends = document.querySelector('.absolute.bottom-6');
+                    
+                    if (mapEl) mapEl.style.filter = 'blur(8px)';
+                    if (navbar) navbar.style.filter = 'blur(8px)';
+                    if (legends) legends.style.filter = 'blur(8px)';
+                    
+                    document.body.appendChild(overlay);
                 }
-            }, 50); // Small delay to let the popup expand first
+            } else {
+                // Desktop: pan the map to ensure the expanded popup is fully visible
+                setTimeout(() => {
+                    const popup = document.querySelector('.leaflet-popup');
+                    if (popup) {
+                        const popupRect = popup.getBoundingClientRect();
+                        const mapRect = document.getElementById('map').getBoundingClientRect();
+                        
+                        // Check if popup extends beyond map bounds
+                        let panX = 0;
+                        let panY = 0;
+                        
+                        if (popupRect.bottom > mapRect.bottom) {
+                            panY = popupRect.bottom - mapRect.bottom + 20;
+                        }
+                        if (popupRect.top < mapRect.top) {
+                            panY = popupRect.top - mapRect.top - 20;
+                        }
+                        if (popupRect.right > mapRect.right) {
+                            panX = popupRect.right - mapRect.right + 20;
+                        }
+                        if (popupRect.left < mapRect.left) {
+                            panX = popupRect.left - mapRect.left - 20;
+                        }
+                        
+                        if (panX !== 0 || panY !== 0) {
+                            map.panBy([panX, panY], { animate: true, duration: 0.3 });
+                        }
+                    }
+                }, 50);
+            }
         } else {
+            // Remove fullscreen overlay if it exists
+            const overlay = document.getElementById('fullscreen-popup-overlay');
+            if (overlay) {
+                document.body.removeChild(overlay);
+            }
+            
+            // Remove blur from background elements
+            const mapEl = document.getElementById('map');
+            const navbar = document.querySelector('.absolute.top-4');
+            const legends = document.querySelector('.absolute.bottom-6');
+            
+            if (mapEl) mapEl.style.filter = '';
+            if (navbar) navbar.style.filter = '';
+            if (legends) legends.style.filter = '';
+            
             details.style.display = 'none';
             toggle.textContent = 'More';
         }
