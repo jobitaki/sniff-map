@@ -15,8 +15,9 @@
 </head>
 <body class="m-0 p-0">
     <!-- Header -->
-    <div class="absolute top-0 left-0 right-0 z-[1000] bg-sky-900/85 backdrop-blur-sm text-white shadow-lg border-b border-white/20">
-        <div class="flex items-center justify-between px-6 py-2">
+    <div class="absolute top-4 left-4 right-4 z-[500] flex items-center justify-between pointer-events-none">
+        <!-- Logo and Title in Rounded Rectangle -->
+        <div class="bg-sky-900/90 backdrop-blur-sm text-white shadow-lg rounded-full pl-4 pr-6 py-2 border border-white/20 pointer-events-auto">
             <div class="flex items-center gap-3">
                 <div class="w-[40px] h-[40px] rounded-full flex items-center justify-center p-0">
                     <img src="sniff_logo.png" alt="Sniff Logo" class="w-full h-full object-contain">
@@ -26,26 +27,20 @@
                     <span class="text-xl">pittsburgh</span>
                 </div>
             </div>
-            
-            <!-- Desktop Navigation -->
-            <div class="hidden md:flex items-center gap-4">
-                <a href="about.html" class="text-lg hover:underline">about</a>
-                <a href="contact.html" class="text-lg hover:underline">contact</a>
-            </div>
-            
-            <!-- Mobile Menu Button -->
-            <button id="mobile-menu-btn" class="md:hidden p-2">
+        </div>
+        
+        <!-- Menu Dropdown Button -->
+        <div class="relative pointer-events-auto">
+            <button id="menu-btn" class="bg-sky-900/90 backdrop-blur-sm text-white shadow-lg rounded-xl p-3 border border-white/20 hover:bg-sky-800/90 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                 </svg>
             </button>
-        </div>
-        
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white/20 backdrop-blur-md border-t border-white/40">
-            <div class="px-4 py-3 space-y-2 text-right">
-                <a href="about.html" class="block text-lg hover:text-blue-300 text-white">about</a>
-                <a href="contact.html" class="block text-lg hover:text-blue-300 text-white">contact</a>
+            
+            <!-- Dropdown Menu -->
+            <div id="dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-sky-900/95 backdrop-blur-md text-white rounded-xl shadow-xl border border-white/20 overflow-hidden z-[600]">
+                <a href="about.html" class="block px-4 py-3 text-lg hover:bg-white/20 transition-colors">about</a>
+                <a href="contact.html" class="block px-4 py-3 text-lg hover:bg-white/20 transition-colors">contact</a>
             </div>
         </div>
     </div>
@@ -221,5 +216,23 @@
         });
     </script> -->
     <script src="map.js"></script>
+    <script>
+        // Menu dropdown functionality
+        document.getElementById('menu-btn').addEventListener('click', function(event) {
+            event.stopPropagation();
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            dropdownMenu.classList.toggle('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const menuBtn = document.getElementById('menu-btn');
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            
+            if (!menuBtn.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+    </script>
 </body>
 </html>

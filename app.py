@@ -1,6 +1,6 @@
 from flask import Flask, json, request, jsonify, render_template, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
 import time
 from dotenv import load_dotenv

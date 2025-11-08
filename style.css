@@ -14,33 +14,76 @@
 }
 /* Fix zoom controls positioning to avoid navbar overlap */
 .leaflet-control-zoom {
-    margin-top: 70px !important; /* Push zoom controls below the simplified navbar */
+    margin-top: 90px !important; /* Push zoom controls below the simplified navbar */
+    margin-left: 15px !important; /* Slight left margin */
     z-index: 999 !important; /* Ensure they stay below navbar but above map */
 }
 
-/* Make zoom controls larger */
+/* Make zoom controls larger and fully rounded */
+.leaflet-control-zoom {
+    border: 2px solid rgba(255,255,255,0.8) !important;
+    border-radius: 25px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    overflow: hidden !important; /* This clips the buttons to the rounded border */
+}
+
 .leaflet-control-zoom a {
     width: 40px !important;
     height: 40px !important;
     font-size: 24px !important;
     line-height: 40px !important;
+    border: none !important; /* Remove default button borders */
+    border-radius: 0 !important; /* Remove individual button rounding */
 }
 
-.leaflet-control-zoom {
-    border: 2px solid rgba(255,255,255,0.8) !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+/* Add separator between buttons */
+.leaflet-control-zoom a + a {
+    border-top: 1px solid rgba(0,0,0,0.1) !important;
 }
 
-/* #map {
-    height: 600px;
-    width: 100%;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-} */
+/* Modern popup styling */
+.air-quality-popup-modern {
+    font-family: 'IBM Plex Sans', sans-serif;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
 
+/* Remove default Leaflet popup styling */
+.leaflet-popup-content-wrapper {
+    padding: 0 !important;
+    border-radius: 25px !important;
+    overflow: hidden;
+}
+
+.leaflet-popup-content {
+    margin: 0 !important;
+    font-family: 'IBM Plex Sans', sans-serif !important;
+}
+
+/* Popup tip (arrow) styling */
+.leaflet-popup-tip {
+    background: white !important;
+}
+
+/* Popup close button styling */
+.leaflet-popup-close-button {
+    color: white !important;
+    font-size: 20px !important;
+    font-weight: 500 !important;
+    padding: 2px 4px !important;
+    right: 8px !important;
+    top: 8px !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.leaflet-popup-close-button:hover {
+    color: rgba(255,255,255,0.8) !important;
+}
+
+/* Old popup styles - keeping for compatibility */
 .air-quality-popup {
-    font-family: Arial, sans-serif;
+    font-family: 'IBM Plex Sans', sans-serif;
     min-width: 250px;
 }
 
