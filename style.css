@@ -1,0 +1,86 @@
+/* Set IBM Plex Sans as the default font for all text */
+* {
+    font-family: 'IBM Plex Sans', sans-serif;
+}
+
+#map { height: 100vh; width: 100%; }
+.air-quality-marker {
+    background: none;
+    border: none;
+    font-weight: regular;
+    font-size: 20px;
+    text-align: center;
+    line-height: 50px;
+}
+/* Fix zoom controls positioning to avoid navbar overlap */
+.leaflet-control-zoom {
+    margin-top: 70px !important; /* Push zoom controls below the simplified navbar */
+    z-index: 999 !important; /* Ensure they stay below navbar but above map */
+}
+
+/* Make zoom controls larger */
+.leaflet-control-zoom a {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 24px !important;
+    line-height: 40px !important;
+}
+
+.leaflet-control-zoom {
+    border: 2px solid rgba(255,255,255,0.8) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+/* #map {
+    height: 600px;
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+} */
+
+.air-quality-popup {
+    font-family: Arial, sans-serif;
+    min-width: 250px;
+}
+
+.air-quality-popup h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.aqi-badge {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.air-quality-popup table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+}
+
+.air-quality-popup td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.timestamp {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    color: #666;
+}
+
+#status {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    text-align: center;
+}

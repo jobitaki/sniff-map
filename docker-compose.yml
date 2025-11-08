@@ -24,7 +24,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres123@db:5432/sniff_db
     ports:
-      - "5001:5000"
+      - "80:80"
     depends_on:
       db:
         condition: service_healthy
