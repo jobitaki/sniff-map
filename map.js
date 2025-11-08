@@ -40,7 +40,7 @@ function getAQICategory(pm25) {
 }
 
 // Function to format AQI category with special styling
-function formatAQICategory(pm25) {
+function formatAQICategory(pm25, isMobile = false, categorySize = '32px', goodSize = '48px', sensitiveSize = '32px', sensitiveSubSize = '16px') {
     const category = getAQICategory(pm25);
 
     if (category === 'Hazardous') {
@@ -48,21 +48,24 @@ function formatAQICategory(pm25) {
     }
     
     if (category === 'Very Unhealthy') {
-        return '<div style="font-size: 24px; font-weight: 500; line-height: 1.2;">Very Unhealthy</div>';
+        return `<div style="font-size: 24px; font-weight: 500; line-height: 1.3;">
+            <div>Very</div>
+            <div>Unhealthy</div>
+        </div>`;
     }
     
     if (category === 'Unhealthy for Sensitive Groups') {
         return `<div style="font-weight: 500; line-height: 1.3;">
-            <div style="font-size: 32px;">Unhealthy</div>
-            <div style="font-size: 16px;">for Sensitive Groups</div>
+            <div style="font-size: ${sensitiveSize};">Unhealthy</div>
+            <div style="font-size: ${sensitiveSubSize};">for Sensitive Groups</div>
         </div>`;
     }
     
     if (category === 'Good') {
-        return '<div style="font-size: 48px; font-weight: 500; line-height: 1.2;">Good</div>';
+        return `<div style="font-size: ${goodSize}; font-weight: 500; line-height: 1.2;">Good</div>`;
     }
     
-    return `<div style="font-size: 32px; font-weight: 500; line-height: 1.2;">${category}</div>`;
+    return `<div style="font-size: ${categorySize}; font-weight: 500; line-height: 1.2;">${category}</div>`;
 }
 
 // Format age display with convenient units
@@ -100,15 +103,23 @@ function createPopupContent(reading) {
     const timestamp = new Date(reading.t * 1000);
     const pm25Value = reading.pm25 ? Math.round(reading.pm25) : 'N/A';
     const popupId = `popup-${reading.t}`;
+    const isMobile = window.innerWidth < 768;
+    
+    // Scale down sizes for mobile
+    const numberSize = isMobile ? '48px' : '64px';
+    const categorySize = isMobile ? '24px' : '32px';
+    const goodSize = isMobile ? '36px' : '48px';
+    const sensitiveSize = isMobile ? '24px' : '32px';
+    const sensitiveSubSize = isMobile ? '12px' : '16px';
     
     return `
-        <div class="air-quality-popup-modern" style="min-width: 300px; max-width: 340px;">
+        <div class="air-quality-popup-modern" style="min-width: ${isMobile ? '260px' : '300px'}; max-width: ${isMobile ? '300px' : '340px'};">
             <!-- Header Section -->
-            <div style="background-color: ${getColor(reading.pm25)}; padding: 20px 16px; color: white;">
-                <div style="font-size: 12px; margin-bottom: 12px;">${formatAge(reading.age_hours)}</div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 12px;">
-                    <div style="flex: 1;">${formatAQICategory(reading.pm25)}</div>
-                    <div style="font-size: 64px; font-weight: 700; line-height: 1; flex-shrink: 0;">${pm25Value}</div>
+            <div style="background-color: ${getColor(reading.pm25)}; padding: ${isMobile ? '16px 12px' : '20px 16px'}; color: white;">
+                <div style="font-size: ${isMobile ? '11px' : '12px'}; margin-bottom: ${isMobile ? '10px' : '12px'};">${formatAge(reading.age_hours)}</div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: ${isMobile ? '10px' : '12px'}; gap: ${isMobile ? '8px' : '12px'};">
+                    <div style="flex: 1;">${formatAQICategory(reading.pm25, isMobile, categorySize, goodSize, sensitiveSize, sensitiveSubSize)}</div>
+                    <div style="font-size: ${numberSize}; font-weight: 700; line-height: 1; flex-shrink: 0;">${pm25Value}</div>
                 </div>
                 <div style="width: 100%; height: 1px; background-color: rgba(255,255,255,0.3); margin: 12px 0;"></div>
                 <div style="font-size: 14px; display: flex; justify-content: space-between; width: 100%; gap: 8px;">
@@ -164,8 +175,12 @@ function createPopupContent(reading) {
                             <td style="font-weight: 600; text-align: right;">${reading.rh?.toFixed(0) ?? 'N/A'}%</td>
                         </tr>
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
-                            <td style="color: #666;">Timestamp</td>
-                            <td style="font-weight: 600; text-align: right;">${timestamp.toLocaleDateString()} ${timestamp.toLocaleTimeString()}</td>
+                            <td style="color: #666;">Date</td>
+                            <td style="font-weight: 600; text-align: right;">${timestamp.toLocaleDateString()}</td>
+                        </tr>
+                        <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
+                            <td style="color: #666;">Time</td>
+                            <td style="font-weight: 600; text-align: right;">${timestamp.toLocaleTimeString()}</td>
                         </tr>
                     </table>
                     <div style="display: flex; justify-content: space-between; margin-top: 16px; font-size: 12px; color: #666;">
@@ -187,6 +202,36 @@ window.toggleDetails = function(popupId) {
         if (details.style.display === 'none') {
             details.style.display = 'block';
             toggle.textContent = 'Hide';
+            
+            // Pan the map to ensure the expanded popup is fully visible
+            setTimeout(() => {
+                const popup = document.querySelector('.leaflet-popup');
+                if (popup) {
+                    const popupRect = popup.getBoundingClientRect();
+                    const mapRect = document.getElementById('map').getBoundingClientRect();
+                    
+                    // Check if popup extends beyond map bounds
+                    let panX = 0;
+                    let panY = 0;
+                    
+                    if (popupRect.bottom > mapRect.bottom) {
+                        panY = popupRect.bottom - mapRect.bottom + 20; // Add 20px padding
+                    }
+                    if (popupRect.top < mapRect.top) {
+                        panY = popupRect.top - mapRect.top - 20;
+                    }
+                    if (popupRect.right > mapRect.right) {
+                        panX = popupRect.right - mapRect.right + 20;
+                    }
+                    if (popupRect.left < mapRect.left) {
+                        panX = popupRect.left - mapRect.left - 20;
+                    }
+                    
+                    if (panX !== 0 || panY !== 0) {
+                        map.panBy([panX, panY], { animate: true, duration: 0.3 });
+                    }
+                }
+            }, 50); // Small delay to let the popup expand first
         } else {
             details.style.display = 'none';
             toggle.textContent = 'More';
