@@ -127,3 +127,12 @@
     border-radius: 4px;
     text-align: center;
 }
+
+/* :root {
+    --map-tiles-filter: brightness(0.6) invert(1) contrast(3) saturate(0.0) brightness(0.3);
+}
+
+
+.map-tiles {
+    filter:var(--map-tiles-filter, none);
+} */

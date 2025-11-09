@@ -3,7 +3,8 @@ let map = L.map('map').setView([40.447778, -79.936917], 13);
 
 // Add OpenStreetMap tiles
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+    attribution: '© OpenStreetMap contributors',
+    className: 'map-tiles'
 }).addTo(map);
 
 // Store markers for updates
@@ -13,9 +14,9 @@ let markerData = {}; // Store reading data for zoom updates
 // Function to get marker size and style based on zoom level
 function getMarkerStyle(zoom) {
     if (zoom < 14) {
-        return { size: 20, fontSize: 0, border: 2, showNumber: false };
+        return { size: 20, fontSize: 0, border: 3, showNumber: false };
     } else {
-        return { size: 40, fontSize: 14, border: 3, showNumber: true };
+        return { size: 40, fontSize: 14, border: 4, showNumber: true };
     }
 }
 
@@ -39,10 +40,10 @@ function createMarkerIcon(reading, zoom) {
             border-radius: ${borderRadius};
             background-color: ${color};
             border: ${style.border}px solid ${borderColor};
+            box-shadow: 0 0 0 1px #024a70, 0 2px 6px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
             font-weight: 400;
             font-size: ${style.fontSize}px;
             color: #FFF;
