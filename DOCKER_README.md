@@ -164,6 +164,21 @@ To restore data:
 docker-compose exec -T db psql -U sniff_user sniff_pittsburgh < backup.sql
 ```
 
+# Connect to PostgreSQL as the postgres user
+psql -U postgres
+
+# Inside psql, drop the database
+DROP DATABASE sniff_db;
+
+# Recreate it
+CREATE DATABASE sniff_db;
+
+# Grant permissions
+GRANT ALL PRIVILEGES ON DATABASE sniff_db TO postgres;
+
+# Exit psql
+\q
+
 ## 🔧 Production Deployment
 
 For production deployment:

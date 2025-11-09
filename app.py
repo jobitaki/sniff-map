@@ -110,6 +110,107 @@ def start_cleanup_thread(interval_hours=24, days_to_keep=30):
     cleanup_thread.start()
     print(f"🧹 Started cleanup thread (runs every {interval_hours}h, keeps {days_to_keep} days)")
 
+def collect_achd_data():
+    """Import and run ACHD data collection"""
+    try:
+        import sys
+        import importlib.util
+        
+        # Load the ACHD data request module
+        spec = importlib.util.spec_from_file_location("achd_data_request", "ACHD_data_request.py")
+        achd_module = importlib.util.module_from_spec(spec)
+        sys.modules["achd_data_request"] = achd_module
+        spec.loader.exec_module(achd_module)
+        
+        # Run the collect_data function
+        print("📡 Running ACHD data collection...")
+        achd_module.collect_data()
+        
+        # Parse and import the generated JSON file
+
+        import glob
+        json_files = glob.glob("achd_updates/achd_update_*.json")
+        
+        if not json_files:
+            print("⚠️  No ACHD JSON files found to import")
+            return
+        
+        # # Get the most recent file
+        # latest_file = max(json_files, key=os.path.getmtime)
+        # print(f"📥 Importing data from {latest_file}...")
+        # There should only be one file read
+
+        with open(json_files[0], 'r') as f:
+            content = f.read().strip()
+            # Remove trailing comma if present
+            if content.endswith(',]'):
+                content = content[:-2] + ']'
+            data = json.loads(content)
+        
+        with app.app_context():
+            added_count = 0
+            updated_count = 0
+
+            print(data)
+            
+            for reading_data in data:
+                # Calculate location-based ID
+                lat = reading_data.get('la')
+                lon = reading_data.get('lo')
+                location_id = calculate_location_id(lat, lon)
+                
+                # Check if reading already exists at this location
+                existing = AirQualityReading.query.filter_by(id=location_id).first()
+                
+                if existing:
+                    # Update existing reading
+                    for key, value in reading_data.items():
+                        setattr(existing, key, value)
+                    existing.created_at = datetime.utcnow()
+                    updated_count += 1
+                else:
+                    # Create new reading with location-based ID
+                    reading = AirQualityReading(id=location_id, **reading_data)
+                    db.session.add(reading)
+                    added_count += 1
+            
+            db.session.commit()
+            print(f"✅ ACHD data imported: {added_count} new, {updated_count} updated")
+            
+    except Exception as e:
+        print(f"❌ Error collecting/importing ACHD data: {e}")
+        import traceback
+        traceback.print_exc()
+
+def periodic_achd_collection(interval_hours=1):
+    """Run ACHD data collection periodically"""
+    while True:
+        try:
+            time.sleep(interval_hours * 60 * 60)  # Wait for interval
+            print(f"\n📡 Running periodic ACHD data collection...")
+            collect_achd_data()
+        except Exception as e:
+            print(f"❌ Error in periodic ACHD collection: {e}")
+
+def start_achd_thread(interval_hours=1):
+    """Start background thread for ACHD data collection"""
+    achd_thread = threading.Thread(
+        target=periodic_achd_collection,
+        args=(interval_hours,),
+        daemon=True
+    )
+    achd_thread.start()
+    print(f"📡 Started ACHD collection thread (runs every {interval_hours}h)")
+
+def calculate_location_id(lat, lon):
+    """
+    Calculate a unique ID based on latitude and longitude using XOR
+    Convert floats to integers by multiplying by 1000000 to preserve precision
+    """
+    lat_int = int(lat * 1000000)
+    lon_int = int(lon * 1000000)
+    return lat_int ^ lon_int
+
 def wait_for_db(max_retries=30, delay=2):
     """Wait for database to be available and create tables"""
     for attempt in range(max_retries):
@@ -176,7 +277,8 @@ class AirQualityReading(db.Model):
     # longitude = db.Column(db.Float, nullable=False)
     # timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-    t = db.Column('t', db.Integer, primary_key=True)  # Timestamp used as ID
+    id = db.Column('id', db.BigInteger, primary_key=True)  # Location-based ID (XOR of lat/lon)
+    t = db.Column('t', db.Integer)  # Timestamp
     la = db.Column('la', db.Float)  # Latitude
     lo = db.Column('lo', db.Float) # Longitude
     lad = db.Column('lad', db.String(1))  # Latitude direction (N/S)
@@ -202,7 +304,7 @@ class AirQualityReading(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
-        return f'<Reading {self.t}: PM2.5={self.pm25}, PM10={self.pm10}>'
+        return f'<Reading {self.id} at ({self.la}, {self.lo}): PM2.5={self.pm25}, PM10={self.pm10}>'
 
 def print_all_data():
     """Print all data points in the database"""
@@ -210,7 +312,7 @@ def print_all_data():
     print("📊 ALL AIR QUALITY DATA POINTS")
     print("="*60)
     
-    readings = AirQualityReading.query.order_by(AirQualityReading.t.desc()).all()
+    readings = AirQualityReading.query.order_by(AirQualityReading.created_at.desc()).all()
     
     if not readings:
         print("No data points in database yet.")
@@ -246,7 +348,7 @@ def contact_html():
 @app.route('/sniff_logo.png')
 def logo():
     """Serve the logo image"""
-    return send_from_directory('.', 'sniff_logo.png')
+    return send_from_directory('.', 'sniff_logo_white.png')
 
 @app.route('/style.css')
 def serve_css():
@@ -259,7 +361,7 @@ def serve_js():
 @app.route('/api/data/latest', methods=['GET'])
 def get_latest_data():
     """Get latest air quality data for the map"""
-    readings = AirQualityReading.query.order_by(AirQualityReading.t.desc()).limit(50).all()
+    readings = AirQualityReading.query.order_by(AirQualityReading.created_at.desc()).limit(50).all()
     
     data = []
     for reading in readings:
@@ -270,6 +372,7 @@ def get_latest_data():
             continue  # Skip invalid locations
         
         data.append({
+            'id': reading.id,
             't': reading.t,
             'la': reading.la,
             'lo': reading.lo,
@@ -323,43 +426,30 @@ def handle_tts_webhook():
         lat = json_data.get('la')
         lon = json_data.get('lo')
         
-        # Check if there's a nearby reading within configured radius
-        MERGE_RADIUS_METERS = 50  # Adjust this value as needed
-        nearby_reading = find_nearby_reading(lat, lon, MERGE_RADIUS_METERS)
+        # Calculate location-based ID
+        location_id = calculate_location_id(lat, lon)
         
-        if nearby_reading:
-            # Update existing nearby reading
-            print(f"📍 Found nearby reading within {MERGE_RADIUS_METERS}m - updating existing entry")
-            
-            for key, value in json_data.items():
-                setattr(nearby_reading, key, value)
-            
-            nearby_reading.created_at = datetime.utcnow()
-            db.session.commit()
-            
-            print(f"✅ Updated existing entry: PM2.5={nearby_reading.pm25}, Location=({nearby_reading.la}, {nearby_reading.lo})")
-            print_all_data()
-            
-            return jsonify({'status': 'data_updated', 'action': 'merge_nearby'}), 200
-        
-        # check if database entry already exists by timestamp
-        existing_entry = AirQualityReading.query.filter_by(t=json_data.get('t')).first()
+        # Check if database entry already exists by location ID
+        existing_entry = AirQualityReading.query.filter_by(id=location_id).first()
         if existing_entry:
-            # update existing entry by timestamp
-
+            # Update existing entry by location
+            print(f"📍 Found existing entry at location ({lat}, {lon}) - updating")
+            
             for key, value in json_data.items():
                 setattr(existing_entry, key, value)
 
+            existing_entry.created_at = datetime.utcnow()
             db.session.commit()
-            print(f"✅ Existing timestamp entry updated in database")
+            print(f"✅ Existing location entry updated in database")
 
             # Print all data points after update
             print_all_data()
 
-            return jsonify({'status': 'data_updated', 'action': 'update_timestamp'}), 200
+            return jsonify({'status': 'data_updated', 'action': 'update_location'}), 200
         
-        # Create dummy reading
+        # Create dummy reading with location-based ID
         reading = AirQualityReading(
+            id=location_id,
             t=json_data.get('t'),
             la=-1,
             lo=-1,
@@ -409,7 +499,7 @@ def health_check():
 @app.route('/data', methods=['GET'])
 def get_all_data():
     """Get all data points as JSON"""
-    readings = AirQualityReading.query.order_by(AirQualityReading.t.desc()).all()
+    readings = AirQualityReading.query.order_by(AirQualityReading.created_at.desc()).all()
     
     data = []
     # for reading in readings:
@@ -439,7 +529,15 @@ if __name__ == '__main__':
     # Runs every 24 hours, keeps data from last 30 days
     start_cleanup_thread(interval_hours=24, days_to_keep=30)
     
-    print("🌐 Website available at:")
+    # Start background ACHD data collection thread
+    # Runs every 1 hour to fetch latest ACHD air quality data
+    start_achd_thread(interval_hours=1)
+    
+    # Run initial ACHD data collection
+    print("\n📡 Running initial ACHD data collection...")
+    collect_achd_data()
+    
+    print("\n🌐 Website available at:")
     print("   Main page: http://localhost/")
     print("   About page: http://localhost/about")
     print("")

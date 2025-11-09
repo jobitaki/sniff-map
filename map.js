@@ -260,7 +260,7 @@ function getDataSourceTag(source) {
 
 // Get VOC/NOx index level tag (Sensirion sensor range: 1-500)
 function getIndexLevelTag(indexValue) {
-    if (indexValue === null || indexValue === undefined) {
+    if (indexValue === -1 || indexValue === -1) {
         return { label: 'N/A', color: '#9ca3af' }; // gray-400
     }
     
@@ -341,38 +341,46 @@ function createPopupContent(reading) {
                 <!-- Expandable Details -->
                 <div id="${popupId}-details" style="display: none; border-top: 2px solid #e5e7eb; padding-top: 12px; margin-top: 15px;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        ${reading.pm1 !== null && reading.pm1 !== undefined && reading.pm1 !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">PM1.0</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.pm1?.toFixed(1) ?? 'N/A'} µg/m³</td>
-                        </tr>
+                            <td style="font-weight: 600; text-align: right;">${reading.pm1.toFixed(1)} µg/m³</td>
+                        </tr>` : ''}
+                        ${reading.pm25 !== null && reading.pm25 !== undefined && reading.pm25 !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">PM2.5</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.pm25?.toFixed(1) ?? 'N/A'} µg/m³</td>
-                        </tr>
+                            <td style="font-weight: 600; text-align: right;">${reading.pm25.toFixed(1)} µg/m³</td>
+                        </tr>` : ''}
+                        ${reading.pm10 !== null && reading.pm10 !== undefined && reading.pm10 !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">PM10</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.pm10?.toFixed(1) ?? 'N/A'} µg/m³</td>
-                        </tr>
+                            <td style="font-weight: 600; text-align: right;">${reading.pm10.toFixed(1)} µg/m³</td>
+                        </tr>` : ''}
+                        ${reading.v !== null && reading.v !== undefined && reading.v !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">VOC Index</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.v?.toFixed(0) ?? 'N/A'}</td>
-                        </tr>
+                            <td style="font-weight: 600; text-align: right;">${reading.v.toFixed(0)}</td>
+                        </tr>` : ''}
+                        ${reading.n !== null && reading.n !== undefined && reading.n !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">NOx Index</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.n?.toFixed(0) ?? 'N/A'}</td>
-                        </tr>
+                            <td style="font-weight: 600; text-align: right;">${reading.n.toFixed(0)}</td>
+                        </tr>` : ''}
+                        ${reading.c !== null && reading.c !== undefined && reading.c !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">CO2</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.c?.toFixed(0) ?? 'N/A'} ppm</td>
-                        </tr>
+                            <td style="font-weight: 600; text-align: right;">${reading.c.toFixed(0)} ppm</td>
+                        </tr>` : ''}
+                        ${reading.tmp !== null && reading.tmp !== undefined && reading.tmp !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">Temperature</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.tmp?.toFixed(1) ?? 'N/A'} °C</td>
-                        </tr>
+                            <td style="font-weight: 600; text-align: right;">${reading.tmp.toFixed(1)} °C</td>
+                        </tr>` : ''}
+                        ${reading.rh !== null && reading.rh !== undefined && reading.rh !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">Humidity</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.rh?.toFixed(0) ?? 'N/A'}%</td>
-                        </tr>
+                            <td style="font-weight: 600; text-align: right;">${reading.rh.toFixed(0)}%</td>
+                        </tr>` : ''}
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">Date</td>
                             <td style="font-weight: 600; text-align: right;">${timestamp.toLocaleDateString()}</td>
@@ -384,6 +392,7 @@ function createPopupContent(reading) {
                     </table>
                     
                     <!-- Bike Metadata Section -->
+                    ${(reading.bs !== null && reading.bs !== undefined && reading.bs !== -1) ? `
                     <div style="margin-top: 16px; padding-top: 12px; border-top: 2px solid #e5e7eb;">
                         <div style="font-size: 14px; font-weight: 600; color: #333; margin-bottom: 8px;">Bike Metadata</div>
                         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
@@ -393,10 +402,10 @@ function createPopupContent(reading) {
                             </tr>
                             <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                                 <td style="color: #666;">Bike Speed</td>
-                                <td style="font-weight: 600; text-align: right;">${reading.bs !== null && reading.bs !== undefined && reading.bs >= 0 ? reading.bs.toFixed(1) + ' km/h' : 'N/A'}</td>
+                                <td style="font-weight: 600; text-align: right;">${reading.bs.toFixed(1)} km/h</td>
                             </tr>
                         </table>
-                    </div>
+                    </div>` : ''}
                     
                     <div style="display: flex; justify-content: space-between; margin-top: 16px; font-size: 12px; color: #666;">
                         <a href="#" style="color: #0ea5e9; text-decoration: none;">Learn more about these numbers</a>
@@ -577,7 +586,7 @@ async function updateMap(fitBounds = false) {
                 return;
             }
             
-            const key = `${reading.t}`;
+            const key = `${reading.id}`;
             
             // Don't create duplicate markers
             if (markers[key]) {
