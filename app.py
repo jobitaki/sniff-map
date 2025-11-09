@@ -337,12 +337,12 @@ def index():
     """Serve the main map page"""
     return render_template('index.html')
 
-@app.route('/about.html')
+@app.route('/about')
 def about_html():
     """Route for about.html"""
     return render_template('about.html')
 
-@app.route('/contact.html')
+@app.route('/contact')
 def contact_html():
     """Route for contact.html"""
     return render_template('contact.html')

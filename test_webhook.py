@@ -61,7 +61,9 @@ def create_dummy_payload(timestamp=None, lat=None, lon=None, pm25=None):
     
     if lat is None or lon is None:
         lat, lon = get_random_location_around_pittsburgh()
-    
+
+    location_id = (int(lat * 1000000) ^ int(lon * 1000000))
+
     if pm25 is None:
         pm25 = get_random_pm25()
     
@@ -71,6 +73,7 @@ def create_dummy_payload(timestamp=None, lat=None, lon=None, pm25=None):
     
     # This mimics the actual JSON structure your sensor would send
     sensor_data = {
+        "id": location_id,        # Unique location ID
         "t": timestamp,           # Unix timestamp
         "la": lat,               # Latitude
         "lo": lon,               # Longitude
@@ -88,7 +91,7 @@ def create_dummy_payload(timestamp=None, lat=None, lon=None, pm25=None):
         "c": random.randint(400, 800),       # CO2 (ppm)
         "tmp": round(random.uniform(15, 30), 1),  # Temperature (°C)
         "rh": round(random.uniform(30, 80), 1),   # Relative Humidity (%)
-        "src": 1                 # Data source (1 = sensor, 0 = manual)
+        "src": 2                 # Data source (2 = fake, 1 = sensor, 0 = achd)
     }
     
     # Convert to JSON string (as it would come from LoRaWAN)

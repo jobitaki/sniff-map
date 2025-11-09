@@ -289,7 +289,7 @@ function getDataSourceTag(source) {
     } else if (source === 1) {
         return { label: 'POGOH', color: '#10b981' }; // green-500
     } else if (source === 2) {
-        return { label: 'Test', color: '#f59e0b' }; // amber-500
+        return { label: 'Fake', color: '#f59e0b' }; // amber-500
     } else {
         return { label: 'Unknown', color: '#6b7280' }; // gray-500
     }
