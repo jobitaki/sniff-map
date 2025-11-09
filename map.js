@@ -26,13 +26,17 @@ function createMarkerIcon(reading, zoom) {
     const borderColor = getBorderColor(reading.age_hours);
     const aqiValue = aqi !== null ? aqi : 'N/A';
     const style = getMarkerStyle(zoom);
+    const isACHD = reading.src === 0;
+    
+    // Use square markers for ACHD, circles for others
+    const borderRadius = isACHD ? '15%' : '50%';
     
     return L.divIcon({
         className: 'air-quality-marker',
         html: `<div style="
             width: ${style.size}px;
             height: ${style.size}px;
-            border-radius: 50%;
+            border-radius: ${borderRadius};
             background-color: ${color};
             border: ${style.border}px solid ${borderColor};
             display: flex;
@@ -48,6 +52,15 @@ function createMarkerIcon(reading, zoom) {
     });
 }
 
+// Function to recalculate age for all readings
+function recalculateAges() {
+    const now = Date.now() / 1000; // Current time in seconds
+    Object.entries(markerData).forEach(([key, reading]) => {
+        const ageSeconds = now - reading.t;
+        reading.age_hours = ageSeconds / 3600;
+    });
+}
+
 // Function to update marker icons based on current zoom
 function updateMarkerIcons() {
     const currentZoom = map.getZoom();
@@ -60,8 +73,31 @@ function updateMarkerIcons() {
     });
 }
 
+// Function to update any open popup with fresh content
+function updateOpenPopups() {
+    Object.entries(markers).forEach(([key, marker]) => {
+        const popup = marker.getPopup();
+        if (popup && popup.isOpen()) {
+            const reading = markerData[key];
+            if (reading) {
+                popup.setContent(createPopupContent(reading));
+            }
+        }
+    });
+}
+
+// Function to dynamically update marker ages and appearance
+function updateMarkerAges() {
+    recalculateAges();
+    updateMarkerIcons();
+    updateOpenPopups();
+}
+
 // Listen for zoom events to update marker sizes
 map.on('zoomend', updateMarkerIcons);
+
+// Update marker ages every minute
+setInterval(updateMarkerAges, 60000);
 
 // Function to calculate AQI from pollutant concentration using EPA formula
 function calculateAQI(concentration, pollutant) {
