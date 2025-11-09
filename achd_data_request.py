@@ -53,6 +53,15 @@ PARAM_MAP = {
     "RH%": "rh",
 }
 
+def calculate_location_id(lat, lon):
+    """
+    Calculate a unique ID based on latitude and longitude using XOR
+    Convert floats to integers by multiplying by 1000000 to preserve precision
+    """
+    lat_int = int(lat * 1000000)
+    lon_int = int(lon * 1000000)
+    return lat_int ^ lon_int
+
 def get_hour_measurements(date, hour):
     print("Getting data for date "+str(date)+" hour "+str(hour))
     
@@ -86,11 +95,13 @@ def get_hour_measurements(date, hour):
         if site not in location_map:
             continue
         lat, lon = location_map[site]
+        location_id = calculate_location_id(lat, lon)
 
         key = (site, query_date)
 
         if key not in combined_records:
             combined_records[key] = {
+                "id": location_id,
                 "t": epoch_seconds,
                 "la": round(lat, 5),
                 "lo": round(lon, 5),
@@ -110,6 +121,7 @@ def get_hour_measurements(date, hour):
                 "rh": -1,
                 "src": 0
             }
+            print(combined_records[key])
 
         
         param = r.get("parameter")

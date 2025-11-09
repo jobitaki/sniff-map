@@ -83,11 +83,11 @@ def cleanup_old_data(days_to_keep=30):
             db.session.commit()
             
             if deleted > 0:
-                print(f"🗑️  Cleaned up {deleted} readings older than {days_to_keep} days")
+                print(f"Cleaned up {deleted} readings older than {days_to_keep} days")
             
             return deleted
     except Exception as e:
-        print(f"❌ Error during cleanup: {e}")
+        print(f"Error during cleanup: {e}")
         return 0
 
 def periodic_cleanup(interval_hours=24, days_to_keep=30):
@@ -95,10 +95,10 @@ def periodic_cleanup(interval_hours=24, days_to_keep=30):
     while True:
         try:
             time.sleep(interval_hours * 60 * 60)  # Wait for interval
-            print(f"\n🧹 Running periodic cleanup (keeping last {days_to_keep} days)...")
+            print(f"\nRunning periodic cleanup (keeping last {days_to_keep} days)...")
             cleanup_old_data(days_to_keep)
         except Exception as e:
-            print(f"❌ Error in periodic cleanup: {e}")
+            print(f"Error in periodic cleanup: {e}")
 
 def start_cleanup_thread(interval_hours=24, days_to_keep=30):
     """Start background thread for periodic cleanup"""
@@ -108,7 +108,7 @@ def start_cleanup_thread(interval_hours=24, days_to_keep=30):
         daemon=True
     )
     cleanup_thread.start()
-    print(f"🧹 Started cleanup thread (runs every {interval_hours}h, keeps {days_to_keep} days)")
+    print(f"Started cleanup thread (runs every {interval_hours}h, keeps {days_to_keep} days)")
 
 def collect_achd_data():
     """Import and run ACHD data collection"""
@@ -123,7 +123,7 @@ def collect_achd_data():
         spec.loader.exec_module(achd_module)
         
         # Run the collect_data function
-        print("📡 Running ACHD data collection...")
+        print("Running ACHD data collection...")
         achd_module.collect_data()
         
         # Parse and import the generated JSON file
@@ -132,12 +132,12 @@ def collect_achd_data():
         json_files = glob.glob("achd_updates/achd_update_*.json")
         
         if not json_files:
-            print("⚠️  No ACHD JSON files found to import")
+            print("WARNING: No ACHD JSON files found to import")
             return
         
         # # Get the most recent file
         # latest_file = max(json_files, key=os.path.getmtime)
-        # print(f"📥 Importing data from {latest_file}...")
+        # print(f"Importing data from {latest_file}...")
         # There should only be one file read
 
         with open(json_files[0], 'r') as f:
@@ -155,30 +155,32 @@ def collect_achd_data():
             
             for reading_data in data:
                 # Calculate location-based ID
-                lat = reading_data.get('la')
-                lon = reading_data.get('lo')
-                location_id = calculate_location_id(lat, lon)
+                # lat = reading_data.get('la')
+                # lon = reading_data.get('lo')
+                # location_id = calculate_location_id(lat, lon)
+                location_id = reading_data.get('id')
                 
                 # Check if reading already exists at this location
                 existing = AirQualityReading.query.filter_by(id=location_id).first()
                 
                 if existing:
                     # Update existing reading
+                    print("Updating existing reading at location ID:", location_id)
                     for key, value in reading_data.items():
                         setattr(existing, key, value)
                     existing.created_at = datetime.utcnow()
                     updated_count += 1
                 else:
                     # Create new reading with location-based ID
-                    reading = AirQualityReading(id=location_id, **reading_data)
+                    reading = AirQualityReading(**reading_data)
                     db.session.add(reading)
                     added_count += 1
             
             db.session.commit()
-            print(f"✅ ACHD data imported: {added_count} new, {updated_count} updated")
+            print(f"ACHD data imported: {added_count} new, {updated_count} updated")
             
     except Exception as e:
-        print(f"❌ Error collecting/importing ACHD data: {e}")
+        print(f"Error collecting/importing ACHD data: {e}")
         import traceback
         traceback.print_exc()
 
@@ -187,10 +189,10 @@ def periodic_achd_collection(interval_hours=1):
     while True:
         try:
             time.sleep(interval_hours * 60 * 60)  # Wait for interval
-            print(f"\n📡 Running periodic ACHD data collection...")
+            print(f"\nRunning periodic ACHD data collection...")
             collect_achd_data()
         except Exception as e:
-            print(f"❌ Error in periodic ACHD collection: {e}")
+            print(f"Error in periodic ACHD collection: {e}")
 
 def start_achd_thread(interval_hours=1):
     """Start background thread for ACHD data collection"""
@@ -200,7 +202,7 @@ def start_achd_thread(interval_hours=1):
         daemon=True
     )
     achd_thread.start()
-    print(f"📡 Started ACHD collection thread (runs every {interval_hours}h)")
+    print(f"Started ACHD collection thread (runs every {interval_hours}h)")
 
 def calculate_location_id(lat, lon):
     """
@@ -219,25 +221,25 @@ def wait_for_db(max_retries=30, delay=2):
                 # Try to connect to the database
                 db.session.execute(db.text('SELECT 1'))
                 db.session.commit()
-                print("✅ Database connection successful!")
+                print("Database connection successful!")
                 
                 # Create all tables
-                print("📋 Creating database tables...")
+                print("Creating database tables...")
                 db.create_all()
-                print("✅ Tables created successfully!")
+                print("Tables created successfully!")
                 
                 # Run initial cleanup
-                print("🧹 Running initial cleanup...")
+                print("Running initial cleanup...")
                 cleanup_old_data(days_to_keep=30)
                 
                 return True
         except Exception as e:
-            print(f"⏳ Waiting for database... (attempt {attempt + 1}/{max_retries})")
+            print(f"Waiting for database... (attempt {attempt + 1}/{max_retries})")
             print(f"   Error: {e}")
             if attempt < max_retries - 1:
                 time.sleep(delay)
             else:
-                print("❌ Failed to connect to database after all retries")
+                print("Failed to connect to database after all retries")
                 return False
     return False
 
@@ -309,7 +311,7 @@ class AirQualityReading(db.Model):
 def print_all_data():
     """Print all data points in the database"""
     print("\n" + "="*60)
-    print("📊 ALL AIR QUALITY DATA POINTS")
+    print("ALL AIR QUALITY DATA POINTS")
     print("="*60)
     
     readings = AirQualityReading.query.order_by(AirQualityReading.created_at.desc()).all()
@@ -409,7 +411,7 @@ def handle_tts_webhook():
     """
     try:
         data = request.get_json()
-        print(f"\n🔄 Received TTS webhook: {datetime.now()}")
+        print(f"\nReceived TTS webhook: {datetime.now()}")
         print(f"Raw payload: {data}")
 
         raw_text = data["uplink_message"]["decoded_payload"].get('text')
@@ -426,21 +428,23 @@ def handle_tts_webhook():
         lat = json_data.get('la')
         lon = json_data.get('lo')
         
-        # Calculate location-based ID
-        location_id = calculate_location_id(lat, lon)
+        # # Calculate location-based ID
+        # location_id = calculate_location_id(lat, lon)
+
+        location_id = json_data.get('id')
         
         # Check if database entry already exists by location ID
         existing_entry = AirQualityReading.query.filter_by(id=location_id).first()
         if existing_entry:
             # Update existing entry by location
-            print(f"📍 Found existing entry at location ({lat}, {lon}) - updating")
+            print(f"Found existing entry at location ({lat}, {lon}) - updating")
             
             for key, value in json_data.items():
                 setattr(existing_entry, key, value)
 
             existing_entry.created_at = datetime.utcnow()
             db.session.commit()
-            print(f"✅ Existing location entry updated in database")
+            print(f"Existing location entry updated in database")
 
             # Print all data points after update
             print_all_data()
@@ -479,7 +483,7 @@ def handle_tts_webhook():
         db.session.add(reading)
         db.session.commit()
 
-        print(f"✅ New data point saved to database!")
+        print(f"New data point saved to database!")
 
         # Print all data points after new addition
         print_all_data()
@@ -487,7 +491,7 @@ def handle_tts_webhook():
         return jsonify({'status': 'data_received', 'action': 'create_new'}), 200
         
     except Exception as e:
-        print(f"❌ Error processing TTS webhook: {e}")
+        print(f"Error processing TTS webhook: {e}")
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
@@ -517,12 +521,12 @@ def get_all_data():
     return jsonify({'data': data, 'count': len(data)})
 
 if __name__ == '__main__':
-    print("🚀 Sniff Pittsburgh - Full Stack Air Quality Monitor")
+    print("Sniff Pittsburgh - Full Stack Air Quality Monitor")
     print("="*55)
     
     # Wait for database to be ready
     if not wait_for_db():
-        print("❌ Could not connect to database. Exiting.")
+        print("Could not connect to database. Exiting.")
         exit(1)
     
     # Start background cleanup thread
@@ -534,14 +538,14 @@ if __name__ == '__main__':
     start_achd_thread(interval_hours=1)
     
     # Run initial ACHD data collection
-    print("\n📡 Running initial ACHD data collection...")
+    print("\nRunning initial ACHD data collection...")
     collect_achd_data()
     
-    print("\n🌐 Website available at:")
+    print("\nWebsite available at:")
     print("   Main page: http://localhost/")
     print("   About page: http://localhost/about")
     print("")
-    print("🔌 API endpoints:")
+    print("API endpoints:")
     print("   TTS webhook: http://localhost/tts-webhook")
     print("   Health check: http://localhost/health")
     print("   All data: http://localhost/data")

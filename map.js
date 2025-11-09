@@ -663,7 +663,7 @@ async function updateMap(fitBounds = false) {
             statusEl.textContent = `Last updated: ${new Date().toLocaleTimeString()} - ${result.count} readings`;
         }
         
-        console.log(`✅ Map updated with ${result.count} readings`);
+        console.log(`Map updated with ${result.count} readings`);
             
     } catch (error) {
         console.error('Error fetching data:', error);
