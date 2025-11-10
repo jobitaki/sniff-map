@@ -74,31 +74,169 @@ function updateMarkerIcons() {
     });
 }
 
-// Function to update any open popup with fresh content
-function updateOpenPopups() {
-    Object.entries(markers).forEach(([key, marker]) => {
+// Function to update any open popup with fresh content from database
+async function updateOpenPopups() {
+    // Check if any popups are open
+    const openPopups = Object.entries(markers).filter(([key, marker]) => {
         const popup = marker.getPopup();
-        if (popup && popup.isOpen()) {
+        return popup && popup.isOpen();
+    });
+    
+    if (openPopups.length === 0) {
+        return; // No open popups, skip database query
+    }
+    
+    // Fetch fresh data from database
+    try {
+        const response = await fetch('/api/data/latest');
+        const result = await response.json();
+        
+        // Update markerData with fresh readings
+        result.data.forEach(reading => {
+            const key = `${reading.id}`;
+            if (markerData[key]) {
+                markerData[key] = reading;
+            }
+        });
+        
+        // Update open popups with fresh data by updating individual fields
+        openPopups.forEach(([key, marker]) => {
             const reading = markerData[key];
             if (reading) {
-                popup.setContent(createPopupContent(reading));
+                const popupId = `popup-${reading.t}`;
+                updatePopupFields(popupId, reading);
             }
+        });
+    } catch (error) {
+        console.error('Error updating popups:', error);
+    }
+}
+
+// Function to update individual fields in a popup without replacing the entire content
+function updatePopupFields(popupId, reading) {
+    const { aqi, pollutant } = getMaxAQI(reading);
+    const aqiValue = aqi !== null ? aqi : 'N/A';
+    const aqiLabel = pollutant ? `${pollutant} AQI` : 'AQI';
+    const timestamp = new Date(reading.t * 1000);
+    
+    // Update AQI value
+    const aqiElement = document.querySelector(`#${popupId} .aqi-value`);
+    if (aqiElement) {
+        aqiElement.textContent = aqiValue;
+    }
+    
+    // Update AQI label
+    const aqiLabelElement = document.querySelector(`#${popupId} .aqi-label`);
+    if (aqiLabelElement) {
+        aqiLabelElement.textContent = aqiLabel;
+    }
+    
+    // Update age
+    const ageElement = document.querySelector(`#${popupId} .age-text`);
+    if (ageElement) {
+        ageElement.textContent = formatAge(reading.age_hours);
+    }
+    
+    // Update AQI category
+    const categoryElement = document.querySelector(`#${popupId} .aqi-category`);
+    if (categoryElement) {
+        const isMobile = window.innerWidth < 768;
+        categoryElement.innerHTML = formatAQICategory(aqi, isMobile);
+    }
+    
+    // Update VOC and NOx indices
+    const vocElement = document.querySelector(`#${popupId} .voc-value`);
+    if (vocElement) {
+        vocElement.textContent = getIndexLevelTag(reading.v).label;
+    }
+    
+    const noxElement = document.querySelector(`#${popupId} .nox-value`);
+    if (noxElement) {
+        noxElement.textContent = getIndexLevelTag(reading.n).label;
+    }
+    
+    // Update data freshness tag
+    const freshnessTag = document.querySelector(`#${popupId} .freshness-tag`);
+    if (freshnessTag) {
+        const freshness = getDataFreshnessTag(reading.age_hours);
+        freshnessTag.style.background = freshness.color;
+        freshnessTag.textContent = freshness.label;
+    }
+    
+    // Update detail values if details are expanded
+    const detailsElement = document.getElementById(`${popupId}-details`);
+    if (detailsElement && detailsElement.style.display !== 'none') {
+        // Update PM values
+        const pm1Element = document.querySelector(`#${popupId} .pm1-value`);
+        if (pm1Element && reading.pm1 !== -1) {
+            pm1Element.textContent = `${reading.pm1.toFixed(1)} µg/m³`;
         }
-    });
+        
+        const pm25Element = document.querySelector(`#${popupId} .pm25-value`);
+        if (pm25Element && reading.pm25 !== -1) {
+            pm25Element.textContent = `${reading.pm25.toFixed(1)} µg/m³`;
+        }
+        
+        const pm10Element = document.querySelector(`#${popupId} .pm10-value`);
+        if (pm10Element && reading.pm10 !== -1) {
+            pm10Element.textContent = `${reading.pm10.toFixed(1)} µg/m³`;
+        }
+        
+        // Update VOC/NOx index values
+        const vocIndexElement = document.querySelector(`#${popupId} .voc-index-value`);
+        if (vocIndexElement && reading.v !== -1) {
+            vocIndexElement.textContent = reading.v.toFixed(0);
+        }
+        
+        const noxIndexElement = document.querySelector(`#${popupId} .nox-index-value`);
+        if (noxIndexElement && reading.n !== -1) {
+            noxIndexElement.textContent = reading.n.toFixed(0);
+        }
+        
+        // Update CO2
+        const co2Element = document.querySelector(`#${popupId} .co2-value`);
+        if (co2Element && reading.c !== -1) {
+            co2Element.textContent = `${reading.c.toFixed(0)} ppm`;
+        }
+        
+        // Update temperature
+        const tempElement = document.querySelector(`#${popupId} .temp-value`);
+        if (tempElement && reading.tmp !== -1) {
+            tempElement.textContent = `${reading.tmp.toFixed(1)} °C`;
+        }
+        
+        // Update humidity
+        const rhElement = document.querySelector(`#${popupId} .rh-value`);
+        if (rhElement && reading.rh !== -1) {
+            rhElement.textContent = `${reading.rh.toFixed(0)}%`;
+        }
+        
+        // Update bike speed
+        const bikeSpeedElement = document.querySelector(`#${popupId} .bike-speed-value`);
+        if (bikeSpeedElement && reading.bs !== -1) {
+            bikeSpeedElement.textContent = `${reading.bs.toFixed(1)} km/h`;
+        }
+    }
+    
+    // Update background color based on new AQI
+    const headerElement = document.querySelector(`#${popupId} .popup-header`);
+    if (headerElement) {
+        headerElement.style.backgroundColor = getColor(aqi);
+    }
 }
 
 // Function to dynamically update marker ages and appearance
-function updateMarkerAges() {
+async function updateMarkerAges() {
     recalculateAges();
     updateMarkerIcons();
-    updateOpenPopups();
+    await updateOpenPopups();
 }
 
 // Listen for zoom events to update marker sizes
 map.on('zoomend', updateMarkerIcons);
 
-// Update marker ages every minute
-setInterval(updateMarkerAges, 60000);
+// Update marker ages every 10 seconds
+setInterval(() => updateMarkerAges(), 10000);
 
 // Function to calculate AQI from pollutant concentration using EPA formula
 function calculateAQI(concentration, pollutant) {
@@ -333,29 +471,29 @@ function createPopupContent(reading) {
     const sensitiveSubSize = isMobile ? '12px' : '16px';
     
     return `
-        <div class="air-quality-popup-modern" style="min-width: ${isMobile ? '260px' : '300px'}; max-width: ${isMobile ? '300px' : '340px'};">
+        <div id="${popupId}" class="air-quality-popup-modern" style="min-width: ${isMobile ? '260px' : '300px'}; max-width: ${isMobile ? '300px' : '340px'};">
             <!-- Header Section -->
-            <div style="background-color: ${getColor(aqi)}; padding: ${isMobile ? '16px 12px' : '20px 16px'}; color: white;">
+            <div class="popup-header" style="background-color: ${getColor(aqi)}; padding: ${isMobile ? '16px 12px' : '20px 16px'}; color: white;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: ${isMobile ? '10px' : '12px'}; gap: ${isMobile ? '8px' : '12px'};">
                     <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
                         <div style="background-color: rgba(0,0,0,0.1); padding: ${isMobile ? '8px 14px' : '8px 14px'}; border-radius: 12px; margin-bottom: 8px; display: flex; flex-direction: column; align-items: center;">
-                            <div style="font-size: ${numberSize}; font-weight: 700; line-height: 1; text-align: center;">${aqiValue}</div>
-                            <div style="font-size: ${isMobile ? '10px' : '11px'}; font-weight: 500; opacity: 0.9; text-align: center;">${aqiLabel}</div>
+                            <div class="aqi-value" style="font-size: ${numberSize}; font-weight: 700; line-height: 1; text-align: center;">${aqiValue}</div>
+                            <div class="aqi-label" style="font-size: ${isMobile ? '10px' : '11px'}; font-weight: 500; opacity: 0.9; text-align: center;">${aqiLabel}</div>
                         </div>
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: ${isMobile ? '8px' : '10px'};">
-                        <div style="font-size: ${isMobile ? '11px' : '12px'};">${formatAge(reading.age_hours)}</div>
-                        <div>${formatAQICategory(aqi, isMobile, categorySize, goodSize, sensitiveSize, sensitiveSubSize)}</div>
+                        <div class="age-text" style="font-size: ${isMobile ? '11px' : '12px'};">${formatAge(reading.age_hours)}</div>
+                        <div class="aqi-category">${formatAQICategory(aqi, isMobile, categorySize, goodSize, sensitiveSize, sensitiveSubSize)}</div>
                     </div>
                 </div>
                 <div style="width: 100%; height: 1px; background-color: rgba(255,255,255,0.3); margin: 12px 0;"></div>
                 <div style="font-size: 14px; display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
                     <span style="white-space: nowrap; font-weight: 600;">VOC Index</span>
-                    <span style="white-space: nowrap;">${getIndexLevelTag(reading.v).label}</span>
+                    <span class="voc-value" style="white-space: nowrap;">${getIndexLevelTag(reading.v).label}</span>
                 </div>
                 <div style="font-size: 14px; display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
                     <span style="white-space: nowrap; font-weight: 600;">NOx Index</span>
-                    <span style="white-space: nowrap;">${getIndexLevelTag(reading.n).label}</span>
+                    <span class="nox-value" style="white-space: nowrap;">${getIndexLevelTag(reading.n).label}</span>
                 </div>
             </div>
             
@@ -363,7 +501,7 @@ function createPopupContent(reading) {
             <div style="background: white; padding: 16px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <div style="background: ${getDataFreshnessTag(reading.age_hours).color}; color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap;">
+                        <div class="freshness-tag" style="background: ${getDataFreshnessTag(reading.age_hours).color}; color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap;">
                             ${getDataFreshnessTag(reading.age_hours).label}
                         </div>
                         <div style="background: ${getDataSourceTag(reading.src).color}; color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap;">
@@ -381,42 +519,42 @@ function createPopupContent(reading) {
                         ${reading.pm1 !== null && reading.pm1 !== undefined && reading.pm1 !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">PM1.0</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.pm1.toFixed(1)} µg/m³</td>
+                            <td class="pm1-value" style="font-weight: 600; text-align: right;">${reading.pm1.toFixed(1)} µg/m³</td>
                         </tr>` : ''}
                         ${reading.pm25 !== null && reading.pm25 !== undefined && reading.pm25 !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">PM2.5</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.pm25.toFixed(1)} µg/m³</td>
+                            <td class="pm25-value" style="font-weight: 600; text-align: right;">${reading.pm25.toFixed(1)} µg/m³</td>
                         </tr>` : ''}
                         ${reading.pm10 !== null && reading.pm10 !== undefined && reading.pm10 !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">PM10</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.pm10.toFixed(1)} µg/m³</td>
+                            <td class="pm10-value" style="font-weight: 600; text-align: right;">${reading.pm10.toFixed(1)} µg/m³</td>
                         </tr>` : ''}
                         ${reading.v !== null && reading.v !== undefined && reading.v !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">VOC Index</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.v.toFixed(0)}</td>
+                            <td class="voc-index-value" style="font-weight: 600; text-align: right;">${reading.v.toFixed(0)}</td>
                         </tr>` : ''}
                         ${reading.n !== null && reading.n !== undefined && reading.n !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">NOx Index</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.n.toFixed(0)}</td>
+                            <td class="nox-index-value" style="font-weight: 600; text-align: right;">${reading.n.toFixed(0)}</td>
                         </tr>` : ''}
                         ${reading.c !== null && reading.c !== undefined && reading.c !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">CO2</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.c.toFixed(0)} ppm</td>
+                            <td class="co2-value" style="font-weight: 600; text-align: right;">${reading.c.toFixed(0)} ppm</td>
                         </tr>` : ''}
                         ${reading.tmp !== null && reading.tmp !== undefined && reading.tmp !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">Temperature</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.tmp.toFixed(1)} °C</td>
+                            <td class="temp-value" style="font-weight: 600; text-align: right;">${reading.tmp.toFixed(1)} °C</td>
                         </tr>` : ''}
                         ${reading.rh !== null && reading.rh !== undefined && reading.rh !== -1 ? `
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">Humidity</td>
-                            <td style="font-weight: 600; text-align: right;">${reading.rh.toFixed(0)}%</td>
+                            <td class="rh-value" style="font-weight: 600; text-align: right;">${reading.rh.toFixed(0)}%</td>
                         </tr>` : ''}
                         <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                             <td style="color: #666;">Date</td>
@@ -439,7 +577,7 @@ function createPopupContent(reading) {
                             </tr>
                             <tr style="display: flex; justify-content: space-between; padding: 6px 0;">
                                 <td style="color: #666;">Bike Speed</td>
-                                <td style="font-weight: 600; text-align: right;">${reading.bs.toFixed(1)} km/h</td>
+                                <td class="bike-speed-value" style="font-weight: 600; text-align: right;">${reading.bs.toFixed(1)} km/h</td>
                             </tr>
                         </table>
                     </div>` : ''}
@@ -680,4 +818,7 @@ async function updateMap(fitBounds = false) {
 // Initial load: fit bounds to show all markers
 updateMap(true);
 // Subsequent updates: don't change zoom/center
-setInterval(() => updateMap(false), 30000);
+setInterval(() => {
+    updateMap(false);
+    updateOpenPopups(); // Refresh any open popups with latest data
+}, 10000);

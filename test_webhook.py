@@ -77,6 +77,9 @@ def create_dummy_payload(timestamp=None, lat=None, lon=None, pm25=None):
         "t": timestamp,           # Unix timestamp
         "la": lat,               # Latitude
         "lo": lon,               # Longitude
+        "bs": random.randint(0, 50), # Bike speed
+        "lad": "N",
+        "lod": "W",
         "pm1": pm1,              # PM1.0
         "pm25": pm25,            # PM2.5
         "pm10": pm10,            # PM10
